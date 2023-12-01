@@ -1,5 +1,5 @@
 ## Chatbot
-A simple web application to test different LLMs, built using streamlit.
+A simple web application to test different LLMs for human-machine interfaces, built using streamlit.
 
 ### Getting Started
 
