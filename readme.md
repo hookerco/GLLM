@@ -12,3 +12,5 @@ To run this program, follow these steps:
   <li> add a file called <code>secrets.toml</code> in the folder called <code>.streamlit</code> at the root of your repo, and provide your Hugging Face API token by typing <code>huggingface_token = "..."</code>
   <li> Run the application by running <code>streamlit run chatbot.py</code> in the terminal at the root of the repo. </li> 
 </ol>
+
+If you have an OpenAI API key, you can also insert it as in step 3 in the same file, by typing <code>openai_token = "..."</code>

@@ -2,12 +2,23 @@ import streamlit as st
 from langchain.llms import HuggingFaceHub
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
+from langchain.llms import OpenAI
 import os
 
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+# todo LLMChain is deprecated, switch to LCEL
+
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
+
+try:
+    os.environ["OPENAI_API_KEY"] = st.secrets["openai_token"]
+    use_openai = True
+except KeyError:
+    use_openai = False
+    pass
+
 
 MODELS = {'bloom': 'bigscience/bloom',
           'gpt2': 'gpt2',
@@ -18,24 +29,27 @@ MODELS = {'bloom': 'bigscience/bloom',
           'guanaco-33b': 'timdettmers/guanaco-33b-merged',
           'CodeLlama-34b': 'victor/CodeLlama-34b-Instruct-hf',  ## understands context, very short incomplete answer
           'falcon-7b-instruct': 'tiiuae/falcon-7b-instruct'
-          #'Mistral 7B': 'mistralai/Mistral-7B-v0.1' error
           }
+
+if use_openai:
+    MODELS.update({'OpenAI': ''})
 
 with st.sidebar:
     model = st.selectbox('Which model would you like to use?', tuple(MODELS.keys()))
 
 # Define LLM, prompt template and chain
-llm = HuggingFaceHub(
-    repo_id=MODELS[model], model_kwargs={"temperature": 0.9, "max_length": 500}
-)
+if model != 'OpenAI':
+    llm = HuggingFaceHub(repo_id=MODELS[model], model_kwargs={"temperature": 0.9, "max_length": 500})
+else:
+    llm = OpenAI()
 
 template = """
 You are a helpful chatbot that wants to help people use industrial machines easier. Your purpose is to 
-serve people and cater to their needs.
+serve people and cater to their needs. If you are asked to generate code, please provide a code template 
+and ask the user for details to fill that template. Dont hesitate to ask the user for more information
+if something is unclear or ambiguous. This is very important for my career.
 
 Question: {question}.
-
-IMPORTANT INSTRUCTION: respond below this line.
 
 """
 

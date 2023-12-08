@@ -13,12 +13,12 @@ please answer the question above using one short sentence consisting of 10 words
 
 prompt = PromptTemplate(template=template, input_variables=["question"])
 
-repo_id = 'HuggingFaceH4/zephyr-7b-beta'
+repo_id = 'codellama/CodeLlama-7b-Instruct-hf'
 llm = HuggingFaceHub(
     repo_id=repo_id, model_kwargs={"temperature": 0.5, "max_length": 64}
 )
 llm_chain = LLMChain(prompt=prompt, llm=llm)
 
-question = 'What day is it today?'
+question = 'Generate code to create an array and print each element'
 print(llm_chain.run(question))
 
