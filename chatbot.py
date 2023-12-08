@@ -8,8 +8,6 @@ import os
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# todo LLMChain is deprecated, switch to LCEL
-
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
 
 try:
@@ -44,16 +42,16 @@ else:
     llm = OpenAI()
 
 template = """
-You are a helpful chatbot that wants to help people use industrial machines easier. Your purpose is to 
-serve people and cater to their needs. If you are asked to generate code, please provide a code template 
-and ask the user for details to fill that template. Dont hesitate to ask the user for more information
-if something is unclear or ambiguous. This is very important for my career.
+You are a helpful chatbot that wants to help people use industrial machines easier. 
+Your purpose is to serve people and cater to their needs. 
 
-Question: {question}.
+If and only if you are asked to generate code, please provide a code template and ask the user 
+for details to fill that template. 
 
+{question}
 """
 
-prompt = PromptTemplate(template=template, input_variables=["question"])
+prompt = PromptTemplate.from_template(template)
 
 st.title("💬 Chatbot")
 
@@ -68,14 +66,14 @@ for msg in st.session_state.messages:
 # React to user input
 if msg := st.chat_input("How can I help you?"):
 
-    client = LLMChain(prompt=prompt, llm=llm)
+    chain = prompt | llm
 
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": msg})
     # Display user message in chat message container
     st.chat_message("user").write(msg)
 
-    response = client.run(msg)
+    response = chain.invoke({'question': msg})
 
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.chat_message("assistant").write(response)
