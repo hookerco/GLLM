@@ -7,6 +7,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.llms import HuggingFaceHub
 from glob import glob
+import streamlit as st
+import os
+
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
 
 
 def format_docs(docs):
@@ -14,7 +18,8 @@ def format_docs(docs):
 
 
 data_directory_pdf = 'pdfs'     # same as in train_pipeline
-filepaths = glob(data_directory_pdf + '/**/*.pdf', recursive=True)
+filepaths = glob(data_directory_pdf + '/**/*.pdf', recursive=True)[:1]   # todo [:1] just for testing
+print(filepaths)
 
 # Load data
 loaders = [PyPDFLoader(filepath) for filepath in filepaths]
@@ -61,6 +66,8 @@ rag_chain = (
     | StrOutputParser()
 )
 
-rag_chain.invoke("What is Task Decomposition?")
+print('Q: Was ist der HELLER Lernfabrik?')
+print('A: ')
+print(rag_chain.invoke("Was ist der HELLER Lernfabrik?"))
 
 # next steps: add chat history https://python.langchain.com/docs/use_cases/question_answering/chat_history
