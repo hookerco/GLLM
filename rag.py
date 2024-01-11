@@ -9,6 +9,7 @@ from langchain.llms import HuggingFaceHub
 from glob import glob
 import streamlit as st
 import os
+import textwrap
 
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
 
@@ -17,7 +18,7 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
-data_directory_pdf = 'pdfs'     # same as in train_pipeline
+data_directory_pdf = 'pdfs'     # same as in train_pipeline.py
 filepaths = glob(data_directory_pdf + '/**/*.pdf', recursive=True)[:1]   # todo [:1] just for testing
 print(filepaths)
 
@@ -55,6 +56,7 @@ Use three sentences maximum and keep the answer as concise as possible.
 Question: {question}
 
 Helpful Answer:"""
+
 custom_rag_prompt = PromptTemplate.from_template(template)
 
 # Chain takes a question, retrieves relevant documents,
@@ -66,8 +68,24 @@ rag_chain = (
     | StrOutputParser()
 )
 
-print('Q: Was ist der HELLER Lernfabrik?')
-print('A: ')
-print(rag_chain.invoke("Was ist der HELLER Lernfabrik?"))
+# todo next steps: add chat history https://python.langchain.com/docs/use_cases/question_answering/chat_history
 
-# next steps: add chat history https://python.langchain.com/docs/use_cases/question_answering/chat_history
+# Testing
+prompt_without_rag = PromptTemplate.from_template("""Answer the question at the end.
+If you don't know the answer, just say that you don't know, don't try to make up an answer.
+Use three sentences maximum and keep the answer as concise as possible.
+
+Question: {question}
+
+Helpful Answer:""")
+
+sample_q = "Was ist der HELLER Lernfabrik?"
+
+chain_without_rag = {"question": RunnablePassthrough()} | prompt_without_rag | llm | StrOutputParser()
+plain_a = chain_without_rag.invoke(sample_q)
+# textwrap just to limit number of words in each line
+rag_a = '\n'.join(textwrap.wrap(rag_chain.invoke(sample_q), 100))
+
+print(f'Q: {sample_q}\n')
+print(f'A (with RAG): {rag_a}\n')
+print(f'A (without RAG): {plain_a}\n')
