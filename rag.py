@@ -12,28 +12,35 @@ import os
 import textwrap
 
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
+pdf_data_dir = 'pdfs'     # same as in train_pipeline.py
+vector_db_dir = "faiss_index"
 
 
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
-data_directory_pdf = 'pdfs'     # same as in train_pipeline.py
-filepaths = glob(data_directory_pdf + '/**/*.pdf', recursive=True)[:1]   # todo [:1] just for testing
-print(filepaths)
+embeddings = HuggingFaceEmbeddings()
 
-# Load data
-loaders = [PyPDFLoader(filepath) for filepath in filepaths]
-documents = []
-for loader in loaders:
-    documents.extend(loader.load())
+# if a vector database was already created, just load it instead of creating a new one
+if os.path.exists(vector_db_dir):
+    db = FAISS.load_local(vector_db_dir, embeddings)
+else:
+    filepaths = glob(pdf_data_dir + '/**/*.pdf', recursive=True)
 
-# Split documents to fit in context window of model
-text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-documents = text_splitter.split_documents(documents)
+    # Load data
+    loaders = [PyPDFLoader(filepath) for filepath in filepaths]
+    documents = []
+    for loader in loaders:
+        documents.extend(loader.load())
 
-# Store chunks (after embedding) in vector database
-db = FAISS.from_documents(documents, HuggingFaceEmbeddings())
+    # Split documents to fit in context window of model
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    documents = text_splitter.split_documents(documents)
+
+    # Store chunks (after embedding) in vector database
+    db = FAISS.from_documents(documents, embeddings)
+    db.save_local(vector_db_dir)
 
 # Retrieve mechanism (return relevant Documents given a string query using similarity search)
 # todo: can also try different types of retrievers
