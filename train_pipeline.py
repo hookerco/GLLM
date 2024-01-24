@@ -2,6 +2,7 @@ from pdfminer.high_level import extract_text
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer, \
     DataCollatorForLanguageModeling
+from peft import LoraConfig, TaskType, get_peft_model
 from glob import glob
 from pathlib import Path
 import os
@@ -70,8 +71,17 @@ tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
 tokenized_dataset = dataset.map(lambda x: tokenizer(x['text']), remove_columns=["text"])
 lm_dataset = tokenized_dataset.map(group_texts, batched=True)
 
+lora_config = LoraConfig(
+    r=16,
+    target_modules=["q_proj", "v_proj"],
+    task_type=TaskType.CAUSAL_LM,
+    lora_alpha=32,
+    lora_dropout=0.05
+)
+
 # Define model
-model = AutoModelForCausalLM.from_pretrained(model_path)
+model = get_peft_model(AutoModelForCausalLM.from_pretrained(model_path), lora_config)
+model.print_trainable_parameters()
 
 # Build batches
 tokenizer.pad_token = tokenizer.eos_token
