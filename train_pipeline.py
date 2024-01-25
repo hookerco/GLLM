@@ -43,12 +43,12 @@ files = glob(data_directory_pdf + '/**/*.pdf', recursive=True) # [:2]   # todo r
 for file in files:  # todo use tqdm?
     filename = os.fsdecode(file)
     if filename.endswith(".pdf"):
-        # Extract text from pdf file
-        text = extract_text(Path(filename))
-        text = text.encode('ascii', errors='ignore').decode()
-
         # file name without .pdf extension and complete path
         filename_no_ext = os.path.basename(filename)[:-4]
+
+        # Extract text from pdf file    todo: only do this if corresponding txt file doesnt exist
+        text = extract_text(Path(filename))
+        text = text.encode('ascii', errors='ignore').decode()
 
         # load to txt file
         with open(os.path.join(data_directory_txt, f"{filename_no_ext}.txt"), "w", encoding="utf-8") as text_file:
