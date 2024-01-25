@@ -37,7 +37,7 @@ if not os.path.isdir(data_directory_txt):
     os.makedirs(data_directory_txt)
 
 # Search recursively files in data directory
-files = glob(data_directory_pdf + '/**/*.pdf', recursive=True)[:2]   # todo remove [], only for testing
+files = glob(data_directory_pdf + '/**/*.pdf', recursive=True) # [:2]   # todo remove [], only for testing
 
 # Convert pdf files to txt
 for file in files:  # todo use tqdm?
@@ -105,5 +105,5 @@ trainer = Trainer(
 )
 
 # Evaluate
-eval_results = trainer.evaluate()
-print(f"Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
+#eval_results = trainer.evaluate()
+#print(f"Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
