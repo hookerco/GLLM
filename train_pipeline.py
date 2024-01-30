@@ -6,10 +6,10 @@ from peft import LoraConfig, TaskType, get_peft_model
 from glob import glob
 from pathlib import Path
 import os
-import math
 
 data_directory_pdf = 'pdfs'
 data_directory_txt = 'txt'  # destination folder for text files taken from pdfs
+trained_model_dir = "finetuned_model"
 
 
 def group_texts(examples, block_size=8192):
@@ -37,24 +37,29 @@ if not os.path.isdir(data_directory_txt):
     os.makedirs(data_directory_txt)
 
 # Search recursively files in data directory
-files = glob(data_directory_pdf + '/**/*.pdf', recursive=True) # [:2]   # todo remove [], only for testing
+# To test finetuning, we can also only use subset of files
+files = glob(data_directory_pdf + '/**/*.pdf', recursive=True)
 
 # Convert pdf files to txt
-for file in files:  # todo use tqdm?
+for idx, file in enumerate(files):
     filename = os.fsdecode(file)
     if filename.endswith(".pdf"):
         # file name without .pdf extension and complete path
         filename_no_ext = os.path.basename(filename)[:-4]
+        txt_filepath = os.path.join(data_directory_txt, f"{filename_no_ext}.txt")
 
-        # Extract text from pdf file    todo: only do this if corresponding txt file doesnt exist
-        text = extract_text(Path(filename))
-        text = text.encode('ascii', errors='ignore').decode()
+        # Extract text from pdf file, if not yet done
+        if not os.path.exists(txt_filepath):
+            print(f"Extracting text from file: {filename_no_ext}, {idx}/{len(files)} done")
+            text = extract_text(Path(filename))
+            text = text.encode('ascii', errors='ignore').decode()
 
-        # load to txt file
-        with open(os.path.join(data_directory_txt, f"{filename_no_ext}.txt"), "w", encoding="utf-8") as text_file:
-            text_file.write(text)
+            # load to txt file
+            with open(txt_filepath, "w", encoding="utf-8") \
+                    as text_file:
+                text_file.write(text)
 
-        # todo remove excess spaces in txt file
+        # todo remove excess spaces in txt file?
 
     else:
         continue
@@ -89,7 +94,7 @@ data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
 # Finetune model
 training_args = TrainingArguments(
-    output_dir="finetuned_model",
+    output_dir=trained_model_dir,
     evaluation_strategy="epoch",
     learning_rate=2e-5,
     weight_decay=0.01,
@@ -103,6 +108,8 @@ trainer = Trainer(
     eval_dataset=lm_dataset["test"],
     data_collator=data_collator,
 )
+
+trainer.save_model(trained_model_dir)
 
 # Evaluate
 #eval_results = trainer.evaluate()

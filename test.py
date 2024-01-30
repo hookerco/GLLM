@@ -33,34 +33,34 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
 ################################################################################################
 
 
-def tokenize_function(examples):
-    return tokenizer(examples["text"], padding="max_length", truncation=True)
-
-
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=-1)
-    return metric.compute(predictions=predictions, references=labels)
-
-
-dataset = load_dataset("yelp_review_full")
-tokenizer = AutoTokenizer.from_pretrained('HuggingFaceH4/zephyr-7b-beta')
-tokenized_datasets = dataset.map(tokenize_function, batched=True)
-
-small_train_dataset = tokenized_datasets["train"].shuffle(seed=42).select(range(1000))
-small_eval_dataset = tokenized_datasets["test"].shuffle(seed=42).select(range(1000))
-
-model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=5)
-
-training_args = TrainingArguments(output_dir="test_trainer")
-metric = evaluate.load("accuracy")
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=small_train_dataset,
-    eval_dataset=small_eval_dataset,
-    compute_metrics=compute_metrics,
-)
+# def tokenize_function(examples):
+#     return tokenizer(examples["text"], padding="max_length", truncation=True)
+#
+#
+# def compute_metrics(eval_pred):
+#     logits, labels = eval_pred
+#     predictions = np.argmax(logits, axis=-1)
+#     return metric.compute(predictions=predictions, references=labels)
+#
+#
+# dataset = load_dataset("yelp_review_full")
+# tokenizer = AutoTokenizer.from_pretrained('HuggingFaceH4/zephyr-7b-beta')
+# tokenized_datasets = dataset.map(tokenize_function, batched=True)
+#
+# small_train_dataset = tokenized_datasets["train"].shuffle(seed=42).select(range(1000))
+# small_eval_dataset = tokenized_datasets["test"].shuffle(seed=42).select(range(1000))
+#
+# model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=5)
+#
+# training_args = TrainingArguments(output_dir="test_trainer")
+# metric = evaluate.load("accuracy")
+# trainer = Trainer(
+#     model=model,
+#     args=training_args,
+#     train_dataset=small_train_dataset,
+#     eval_dataset=small_eval_dataset,
+#     compute_metrics=compute_metrics,
+# )
 # trainer.train()
 
 ################################################################################################
@@ -75,3 +75,17 @@ trainer = Trainer(
 # https://huggingface.co/docs/transformers/tasks/language_modeling
 # https://github.com/moabdelmoez/llm-projects/blob/main/talk-to-your-data/run.py
 # https://python.langchain.com/docs/expression_language/cookbook/retrieval
+
+from pipelines import pipeline
+import nltk
+
+nltk.download('punkt')
+nlp = pipeline("question-generation", model="GermanT5/t5-base-german-3e", qg_format="prepend")
+qa = nlp("Die Grundidee der HELLER Lernfabrik ist, den Bau und die Fertigung einer Werkzeugmaschine durch den tatsächlichen Bau und die Fertigung einer solchen zu erlernen. Dabei werden alle Kompetenzen, Abläufe und Zusammenhänge von der Entwicklung über die Produktion und Montage bis hin zur Auslieferung geschult und am realen Objekt umgesetzt.")
+print(qa)
+
+# try only using huggingface model straight
+# ml6team/mt5-small-german-query-generation
+# dehio/german-qg-t5-e2e-quad
+
+# llm = HuggingFaceHub(repo_id="ml6team/mt5-small-german-query-generation", model_kwargs={"temperature": 0.9, "max_length": 500})
