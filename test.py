@@ -7,7 +7,8 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 import streamlit as st
 from datasets import load_dataset
-from transformers import TrainingArguments, Trainer, AutoModelForSequenceClassification, AutoTokenizer
+from transformers import TrainingArguments, Trainer, AutoModelForSequenceClassification, AutoTokenizer, \
+    AutoModelForCausalLM, pipeline
 import numpy as np
 import evaluate
 from glob import glob
@@ -70,22 +71,29 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
 # files = glob(my_path + '/**/*.pdf', recursive=True)
 # print(len(files))
 
+################################################################################################
 
-# links
-# https://huggingface.co/docs/transformers/tasks/language_modeling
-# https://github.com/moabdelmoez/llm-projects/blob/main/talk-to-your-data/run.py
-# https://python.langchain.com/docs/expression_language/cookbook/retrieval
+# Testing question-answer pair generation from text
 
-from pipelines import pipeline
-import nltk
-
-nltk.download('punkt')
-nlp = pipeline("question-generation", model="GermanT5/t5-base-german-3e", qg_format="prepend")
-qa = nlp("Die Grundidee der HELLER Lernfabrik ist, den Bau und die Fertigung einer Werkzeugmaschine durch den tatsächlichen Bau und die Fertigung einer solchen zu erlernen. Dabei werden alle Kompetenzen, Abläufe und Zusammenhänge von der Entwicklung über die Produktion und Montage bis hin zur Auslieferung geschult und am realen Objekt umgesetzt.")
-print(qa)
+# from pipelines import pipeline
+# import nltk
+#
+# nltk.download('punkt')
+# nlp = pipeline("question-generation", model="GermanT5/t5-base-german-3e", qg_format="prepend")
+# qa = nlp("Die Grundidee der HELLER Lernfabrik ist, den Bau und die Fertigung einer Werkzeugmaschine durch den tatsächlichen Bau und die Fertigung einer solchen zu erlernen. Dabei werden alle Kompetenzen, Abläufe und Zusammenhänge von der Entwicklung über die Produktion und Montage bis hin zur Auslieferung geschult und am realen Objekt umgesetzt.")
+# print(qa)
 
 # try only using huggingface model straight
 # ml6team/mt5-small-german-query-generation
 # dehio/german-qg-t5-e2e-quad
 
 # llm = HuggingFaceHub(repo_id="ml6team/mt5-small-german-query-generation", model_kwargs={"temperature": 0.9, "max_length": 500})
+
+################################################################################################
+
+# Testing finetuned model
+
+from peft import PeftModel
+model_path = "finetuned_model"
+
+

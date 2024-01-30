@@ -59,7 +59,9 @@ for idx, file in enumerate(files):
                     as text_file:
                 text_file.write(text)
 
-        # todo remove excess spaces in txt file?
+        # Need to remove excess spaces in txt file?
+        # No, group_texts method concatenates all texts together and then splits the result in small chunks
+        #   according to block_size, so removing spaces makes no difference
 
     else:
         continue
@@ -76,6 +78,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
 tokenized_dataset = dataset.map(lambda x: tokenizer(x['text']), remove_columns=["text"])
 lm_dataset = tokenized_dataset.map(group_texts, batched=True)
 
+# Use LoRA for parameter efficient fine tuning
 lora_config = LoraConfig(
     r=16,
     target_modules=["q_proj", "v_proj"],
@@ -109,6 +112,7 @@ trainer = Trainer(
     data_collator=data_collator,
 )
 
+trainer.train()
 trainer.save_model(trained_model_dir)
 
 # Evaluate
