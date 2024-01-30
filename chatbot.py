@@ -39,7 +39,7 @@ with st.sidebar:
 if model != 'OpenAI':
     llm = HuggingFaceHub(repo_id=MODELS[model], model_kwargs={"temperature": 0.9, "max_length": 500})
 else:
-    llm = OpenAI()
+    llm = OpenAI(model_name="gpt-3.5-turbo-instruct")
 
 template = """
 You are a helpful chatbot that wants to help people use industrial machines easier. 
