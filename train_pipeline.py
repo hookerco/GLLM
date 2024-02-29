@@ -13,12 +13,12 @@ import math
 # Check if GPU can be used
 cuda_available = torch.cuda.is_available()
 device = 'cuda' if cuda_available else 'cpu'
-torch.set_default_device(device)
+#torch.set_default_device(device)
 print(f"GPU is available: {cuda_available}")
 
 #### Define parameters
 
-block_len = 1024
+block_len = 128
 test_split = 0.2
 
 # directories
@@ -27,13 +27,13 @@ data_directory_txt = 'txt'  # destination folder for text files taken from pdfs
 trained_model_dir = "finetuned_model"
 
 # model path from huggingface
-model_path = 'bigcode/starcoder'
+model_path = 'WizardLM/WizardCoder-3B-V1.0'
 
 # lora parameters
 lora_r = 16
 # lora modules depend on specific model,
 # see https://stackoverflow.com/questions/76768226/target-modules-for-applying-peft-lora-on-different-models
-lora_modules = ["c_proj", "c_attn", "q_attn"]
+lora_modules = ["c_proj", "c_attn"]
 lora_alpha = 32
 lora_dropout = 0.05
 

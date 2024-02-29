@@ -1,6 +1,6 @@
 ---
 library_name: peft
-base_model: HuggingFaceH4/zephyr-7b-beta
+base_model: WizardLM/WizardCoder-3B-V1.0
 ---
 
 # Model Card for Model ID
