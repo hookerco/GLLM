@@ -5,14 +5,43 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments,
 from peft import LoraConfig, TaskType, get_peft_model
 from glob import glob
 from pathlib import Path
+import torch
 import os
+import math
 
+#### Define parameters
+
+block_len = 1024
+test_split = 0.2
+
+# directories
 data_directory_pdf = 'pdfs'
 data_directory_txt = 'txt'  # destination folder for text files taken from pdfs
 trained_model_dir = "finetuned_model"
 
+# model path from huggingface
+model_path = 'bigcode/starcoder'
 
-def group_texts(examples, block_size=8192):
+# lora parameters
+lora_r = 16
+lora_modules = ["q_proj", "v_proj"]  # https://stackoverflow.com/questions/76768226/target-modules-for-applying-peft-lora-on-different-models
+lora_alpha = 32
+lora_dropout = 0.05
+
+# training parameters
+evaluation_strategy = "epoch"
+learning_rate = 2e-5
+weight_decay = 0.01
+push_to_hub = False
+fp16 = True
+
+# Check if GPU can be used
+cuda_available = torch.cuda.is_available()
+device = 'cuda' if cuda_available else 'cpu'
+print(f"GPU is available: {cuda_available}")
+
+
+def group_texts(examples, block_size=block_len):
     # Method to split sequence into smaller chunks
     # Taken from huggingface: https://huggingface.co/docs/transformers/tasks/language_modeling
 
@@ -65,13 +94,12 @@ for idx, file in enumerate(files):
 
     else:
         continue
-
+print("Done extracting text")
 
 #### Finetuning
 
-model_path = 'HuggingFaceH4/zephyr-7b-beta'
 dataset = load_dataset(data_directory_txt)
-dataset = dataset['train'].train_test_split(test_size=0.2)
+dataset = dataset['train'].train_test_split(test_size=test_split)
 
 # Tokenize data and split into chunks
 tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
@@ -80,11 +108,11 @@ lm_dataset = tokenized_dataset.map(group_texts, batched=True)
 
 # Use LoRA for parameter efficient fine tuning
 lora_config = LoraConfig(
-    r=16,
-    target_modules=["q_proj", "v_proj"],
+    r=lora_r,
+    target_modules=lora_modules,
     task_type=TaskType.CAUSAL_LM,
-    lora_alpha=32,
-    lora_dropout=0.05
+    lora_alpha=lora_alpha,
+    lora_dropout=lora_dropout
 )
 
 # Define model
@@ -98,10 +126,11 @@ data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 # Finetune model
 training_args = TrainingArguments(
     output_dir=trained_model_dir,
-    evaluation_strategy="epoch",
-    learning_rate=2e-5,
-    weight_decay=0.01,
-    push_to_hub=False,
+    evaluation_strategy=evaluation_strategy,
+    learning_rate=learning_rate,
+    weight_decay=weight_decay,
+    push_to_hub=push_to_hub,
+    fp16=fp16
 )
 
 trainer = Trainer(
@@ -112,9 +141,10 @@ trainer = Trainer(
     data_collator=data_collator,
 )
 
+print("Training ...")
 trainer.train()
 trainer.save_model(trained_model_dir)
 
-# Evaluate
-#eval_results = trainer.evaluate()
-#print(f"Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
+# Evaluate finetuned model
+eval_results = trainer.evaluate()
+print(f"Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
