@@ -1,7 +1,5 @@
-## Chatbot
-A simple web application to test different LLMs for human-machine interfaces, built using streamlit.
-
-### Getting Started
+### Chatbot
+```chatbot.py``` contains a simple web application to test different LLMs for human-machine interfaces, built using streamlit.
 
 To run this program, follow these steps:
 <ol>
@@ -17,13 +15,25 @@ If you have an OpenAI API key, you can also insert it as in step 3 in the same f
 
 ### Finetuning an open-source LLM
 
-To use "the stack" dataset, you need to log in to huggingface by running "huggingface-cli login" in the terminal
+```train_pipeline.py``` contains code to finetune open-source LLMs from Hugging Face. Simply run ```python train_pipeline.py```
+to start the finetuning process.
+
+
+#### The Stack 
+[The Stack](https://huggingface.co/datasets/bigcode/the-stack) contains code files collected from Github, including G-code.
+Around 400 MB of G-code is available with a total of 16020 examples.
+
+To use this dataset, you need to log in to huggingface by running ```huggingface-cli login``` in the terminal
 and providing your huggingface access token.
-Around 400 mb of g-code is available with a total of 16020 examples
+
+To load this dataset, use
 
 ```ds = load_dataset("bigcode/the-stack", data_dir="data/g-code", split="train")```
 
-To use starcoder, you need to be granted access to the model. To do this,
-- Log in to huggingface
-- go to https://huggingface.co/bigcode/starcoder
-- accept the conditions to access model files and content.
+
+
+#### Starcoder
+To use the Starcoder model, you need to be granted access to the model. To do this,
+- Log in to Hugging Face in a terminal like described above
+- Log in to the Hugging Face website, go to [bigcode/starcoder](https://huggingface.co/bigcode/starcoder)
+- Accept the conditions to access model files and content.

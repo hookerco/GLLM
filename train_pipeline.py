@@ -9,6 +9,13 @@ import torch
 import os
 import math
 
+
+# Check if GPU can be used
+cuda_available = torch.cuda.is_available()
+device = 'cuda' if cuda_available else 'cpu'
+torch.set_default_device(device)
+print(f"GPU is available: {cuda_available}")
+
 #### Define parameters
 
 block_len = 1024
@@ -24,7 +31,9 @@ model_path = 'bigcode/starcoder'
 
 # lora parameters
 lora_r = 16
-lora_modules = ["q_proj", "v_proj"]  # https://stackoverflow.com/questions/76768226/target-modules-for-applying-peft-lora-on-different-models
+# lora modules depend on specific model,
+# see https://stackoverflow.com/questions/76768226/target-modules-for-applying-peft-lora-on-different-models
+lora_modules = ["c_proj", "c_attn", "q_attn"]
 lora_alpha = 32
 lora_dropout = 0.05
 
@@ -33,12 +42,7 @@ evaluation_strategy = "epoch"
 learning_rate = 2e-5
 weight_decay = 0.01
 push_to_hub = False
-fp16 = True
-
-# Check if GPU can be used
-cuda_available = torch.cuda.is_available()
-device = 'cuda' if cuda_available else 'cpu'
-print(f"GPU is available: {cuda_available}")
+fp16 = True if cuda_available else False
 
 
 def group_texts(examples, block_size=block_len):
@@ -98,6 +102,7 @@ print("Done extracting text")
 
 #### Finetuning
 
+print("Split data and tokenize text")
 dataset = load_dataset(data_directory_txt)
 dataset = dataset['train'].train_test_split(test_size=test_split)
 
@@ -105,6 +110,8 @@ dataset = dataset['train'].train_test_split(test_size=test_split)
 tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
 tokenized_dataset = dataset.map(lambda x: tokenizer(x['text']), remove_columns=["text"])
 lm_dataset = tokenized_dataset.map(group_texts, batched=True)
+
+print("Done splitting data and tokenizing text")
 
 # Use LoRA for parameter efficient fine tuning
 lora_config = LoraConfig(
@@ -144,6 +151,8 @@ trainer = Trainer(
 print("Training ...")
 trainer.train()
 trainer.save_model(trained_model_dir)
+
+print(f"Finished training, model stored in {trained_model_dir}")
 
 # Evaluate finetuned model
 eval_results = trainer.evaluate()

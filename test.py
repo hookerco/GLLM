@@ -94,6 +94,4 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
 # Testing finetuned model
 
 from peft import PeftModel
-model_path = "finetuned_model"
-
-
+# model_path = "finetuned_model"
