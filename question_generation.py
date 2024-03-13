@@ -1,5 +1,11 @@
-# Taken from https://github.com/patil-suraj/question_generation
-# Check repo for setup details
+"""
+This code takes in text and generates question-answer pairs
+which could be used for LLM evaluation or instruction tuning
+
+Taken from https://github.com/patil-suraj/question_generation
+
+Check repo for details to setup and run code
+"""
 
 import itertools
 import logging

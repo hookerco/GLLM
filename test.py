@@ -92,6 +92,88 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
 ################################################################################################
 
 # Testing finetuned model
+# https://huggingface.co/learn/cookbook/fine_tuning_code_llm_on_single_gpu#inference
+# def get_code_completion(prefix, suffix):
+#     text = prompt = f"""<fim_prefix>{prefix}<fim_suffix>{suffix}<fim_middle>"""
+#     model.eval()
+#     outputs = model.generate(
+#         input_ids=tokenizer(text, return_tensors="pt").input_ids.cuda(),
+#         max_new_tokens=1024,
+#         temperature=0.2,
+#         top_k=50,
+#         top_p=0.95,
+#         do_sample=True,
+#         repetition_penalty=1.0,
+#     )
+#     return tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+#
+# from peft import PeftModel
+# base_model = 'WizardLM/WizardCoder-3B-V1.0'
+# finetuned_params = "finetuned_model"
+#
+# tokenizer = AutoTokenizer.from_pretrained(base_model)
+# model = AutoModelForCausalLM.from_pretrained(base_model)
+#
+# finetuned_model = PeftModel.from_pretrained(model, finetuned_params)
+# finetuned_model.merge_and_unload()
+#
+#
+# text = "Generate G-code for me for milling"
+# model.eval()
+# outputs = model.generate(
+#     input_ids=tokenizer(text, return_tensors="pt").input_ids,
+#     max_new_tokens=1024,
+#     temperature=0.2,
+#     top_k=50,
+#     top_p=0.95,
+#     do_sample=True,
+#     repetition_penalty=1.0,
+# )
+# outputs_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+# print(outputs_text)
 
-from peft import PeftModel
-# model_path = "finetuned_model"
+################################################################################################
+# Testing the stack dataset
+
+def group_texts(examples, block_size=128):
+    # Method to split sequence into smaller chunks
+    # Taken from huggingface: https://huggingface.co/docs/transformers/tasks/language_modeling
+
+    # Concatenate all texts.
+    concatenated_examples = {k: sum(examples[k], []) for k in examples.keys()}
+    total_length = len(concatenated_examples[list(examples.keys())[0]])
+    # We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
+    # customize this part to your needs.
+    total_length = (total_length // block_size) * block_size
+    # Split by chunks of max_len.
+    result = {
+        k: [t[i: i + block_size] for i in range(0, total_length, block_size)]
+        for k, t in concatenated_examples.items()
+    }
+    result["labels"] = result["input_ids"].copy()
+    return result
+
+#dataset = load_dataset('txt')
+#dataset = dataset['train'].train_test_split(test_size=0.2)
+#tokenizer = AutoTokenizer.from_pretrained('WizardLM/WizardCoder-3B-V1.0', use_fast=True)
+#tokenized_dataset = dataset.map(lambda x: tokenizer(x['text']), remove_columns=dataset['train'].column_names)    # DatasetDict containing train test split, each have attribute input_ids and attention_mask
+
+#print(tokenized_dataset['train']['input_ids'])  # list of list of token id ([1045, 32850, 3280], [34, 280], [], [225], [2166, 279, 519, 225, 37, 44]), len = 123888
+#lm_dataset = tokenized_dataset.map(group_texts, batched=True)   # same format as tokenized_dataset, additional
+# print(lm_dataset)
+# print(lm_dataset["train"]['input_ids'])
+
+
+#print("-----------")
+dataset = load_dataset("bigcode/the-stack", data_dir="data/g-code", split="train[:1000]")  # to load less examples, use "train[:1000]"
+print(dataset)
+#dataset = dataset.train_test_split(test_size=0.2)
+
+# Tokenize data and split into chunks
+#tokenizer = AutoTokenizer.from_pretrained('WizardLM/WizardCoder-3B-V1.0', use_fast=True)
+#tokenized_dataset = dataset.map(lambda x: tokenizer(x['content']), remove_columns=dataset['train'].column_names)    # remove all columns
+#print(tokenized_dataset)    # datasetdict -> train, test -> features (including content)
+#print(tokenized_dataset['train'][0])
+#print(tokenized_dataset['train']['input_ids'])
+#lm_dataset = tokenized_dataset.map(group_texts, batched=True)
+#print(np.array(lm_dataset['train']['input_ids']).shape)

@@ -1,3 +1,5 @@
+Python version??
+
 ### Chatbot
 ```chatbot.py``` contains a simple web application to test different LLMs for human-machine interfaces, built using streamlit.
 
@@ -15,20 +17,20 @@ If you have an OpenAI API key, you can also insert it as in step 3 in the same f
 
 ### Finetuning an open-source LLM
 
-```train_pipeline.py``` contains code to finetune open-source LLMs from Hugging Face. Simply run ```python train_pipeline.py```
-to start the finetuning process.
+```train_pipeline.py``` contains code to finetune open-source LLMs from Hugging Face. 
 
+run ```python train_pipeline.py``` to start the finetuning process.
+```--dataset 'thestack'```
 
 #### The Stack 
 [The Stack](https://huggingface.co/datasets/bigcode/the-stack) contains code files collected from Github, including G-code.
 Around 400 MB of G-code is available with a total of 16020 examples.
 
-To use this dataset, you need to log in to huggingface by running ```huggingface-cli login``` in the terminal
-and providing your huggingface access token.
+To use this dataset, you need to log in to Hugging Face in your terminal by:
+1. Running ```huggingface-cli login```
+2. Providing your Hugging Face access token.
 
-To load this dataset, use
-
-```ds = load_dataset("bigcode/the-stack", data_dir="data/g-code", split="train")```
+To load this dataset, use ```ds = load_dataset("bigcode/the-stack", data_dir="data/g-code", split="train")```
 
 
 

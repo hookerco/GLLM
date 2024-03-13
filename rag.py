@@ -43,7 +43,7 @@ else:
     db.save_local(vector_db_dir)
 
 # Retrieve mechanism (return relevant Documents given a string query using similarity search)
-# todo: can also try different types of retrievers
+# Tip: you can also try different types of retrievers
 retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 6})
 
 # Example usage:
