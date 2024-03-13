@@ -75,6 +75,8 @@ params = SimpleNamespace(
 
 #################################### Loading data
 if args.dataset == 'pdf':
+    # Convert pdf files (stored in dir specified by params.data_directory_pdf) into txt files (stored in dir
+    # specified by params.data_directory_txt), which will be used for finetuning the LLM
 
     if not os.path.isdir(params.data_directory_txt):
         os.makedirs(params.data_directory_txt)
