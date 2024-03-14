@@ -66,11 +66,16 @@ params = SimpleNamespace(
     lora_dropout=0.05,
 
     # training parameters
+    batch_size=4,
     evaluation_strategy="epoch",
     learning_rate=2e-5,
     weight_decay=0.01,
     push_to_hub=False,
-    fp16=True if cuda_available else False
+    fp16=True if cuda_available else False,
+
+    # todo test
+    gradient_accumulation_steps=4,
+    gradient_checkpointing=True
 )
 
 #################################### Loading data
@@ -154,12 +159,15 @@ data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
 # Finetune model
 training_args = TrainingArguments(
+    per_device_train_batch_size=params.batch_size,
     output_dir=params.trained_model_dir,
     evaluation_strategy=params.evaluation_strategy,
     learning_rate=params.learning_rate,
     weight_decay=params.weight_decay,
     push_to_hub=params.push_to_hub,
-    fp16=params.fp16
+    fp16=params.fp16,
+    gradient_accumulation_steps=params.gradient_accumulation_steps,
+    gradient_checkpointing=params.gradient_checkpointing
 )
 
 trainer = Trainer(

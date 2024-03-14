@@ -1,5 +1,5 @@
-Python version??
-
+### Todo: Python version, test requirements.txt
+### for starcoder2, need to install transformers from source (https://huggingface.co/bigcode/starcoder2-7b)
 ### Chatbot
 ```chatbot.py``` contains a simple web application to test different LLMs for human-machine interfaces, built using streamlit.
 

@@ -165,8 +165,8 @@ def group_texts(examples, block_size=128):
 
 
 #print("-----------")
-dataset = load_dataset("bigcode/the-stack", data_dir="data/g-code", split="train[:1000]")  # to load less examples, use "train[:1000]"
-print(dataset)
+#dataset = load_dataset("bigcode/the-stack", data_dir="data/g-code", split="train[:1000]")  # to load less examples, use "train[:1000]"
+#print(dataset)
 #dataset = dataset.train_test_split(test_size=0.2)
 
 # Tokenize data and split into chunks
@@ -177,3 +177,7 @@ print(dataset)
 #print(tokenized_dataset['train']['input_ids'])
 #lm_dataset = tokenized_dataset.map(group_texts, batched=True)
 #print(np.array(lm_dataset['train']['input_ids']).shape)
+
+model = AutoModelForCausalLM.from_pretrained('WizardLM/WizardCoder-3B-V1.0', device_map="cpu")
+
+print(model)
