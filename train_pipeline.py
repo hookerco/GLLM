@@ -35,6 +35,8 @@ def group_texts(examples, block_size=256):
 # User picks which dataset to use
 parser = argparse.ArgumentParser(description='Pick the dataset that will be used for finetuning')
 parser.add_argument("--dataset", type=str, default='pdf', help='Pick either "pdf" or "thestack"')
+# todo choose model using argumentparser
+# todo choose to upload finetuned model or save locally
 args = parser.parse_args()
 
 # Check if GPU can be used
@@ -43,7 +45,6 @@ device = 'cuda' if cuda_available else 'cpu'
 #torch.set_default_device(device)
 print(f"GPU is available: {cuda_available}")
 
-# todo test different models, adjust lora_modules
 #################################### Define parameters
 params = SimpleNamespace(
     block_len=128,
@@ -73,7 +74,7 @@ params = SimpleNamespace(
     push_to_hub=False,
     fp16=True if cuda_available else False,
 
-    # todo test
+    # not used
     gradient_accumulation_steps=4,
     gradient_checkpointing=True
 )
@@ -86,7 +87,7 @@ if args.dataset == 'pdf':
     if not os.path.isdir(params.data_directory_txt):
         os.makedirs(params.data_directory_txt)
 
-    # Search recursively files in data directory
+    # Search files recursively in data directory
     # To test finetuning, we can also only use subset of files
     files = glob(params.data_directory_pdf + '/**/*.pdf', recursive=True)
 
@@ -123,7 +124,7 @@ if args.dataset == 'pdf':
 elif args.dataset == 'thestack':
     # only train split is available
     # Training using the whole dataset (16020 rows) takes 85 hours on the NVIDIA GeForce RTX 4090
-    # to load less examples, it is possible to slice the array, e.g. use split="train[:500]" instead of split="train"
+    # to load less examples, it is possible to slice the array, e.g. use split="train[:1000]" instead of split="train"
     dataset = load_dataset("bigcode/the-stack", data_dir="data/g-code", split="train[:1000]")
     data_col = 'content'
 else:
@@ -157,19 +158,23 @@ model.print_trainable_parameters()
 tokenizer.pad_token = tokenizer.eos_token
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
-# Finetune model
+# Set parameters for training
+model_name = params.model_path.split("/")[-1]
 training_args = TrainingArguments(
+    f"{model_name}-finetuned-{args.dataset}",
     per_device_train_batch_size=params.batch_size,
-    output_dir=params.trained_model_dir,
+    # output_dir=params.trained_model_dir,
     evaluation_strategy=params.evaluation_strategy,
     learning_rate=params.learning_rate,
     weight_decay=params.weight_decay,
     push_to_hub=params.push_to_hub,
-    fp16=params.fp16,
-    gradient_accumulation_steps=params.gradient_accumulation_steps,
-    gradient_checkpointing=params.gradient_checkpointing
+    fp16=params.fp16
+    # gradient_accumulation_steps=params.gradient_accumulation_steps,
+    # gradient_checkpointing=params.gradient_checkpointing
+    #   -> these produce RuntimeError: element 0 of tensors does not require grad and does not have a grad_fn
 )
 
+# Define trainer (provide LLM model, training parameters, datasets for training)
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -179,8 +184,12 @@ trainer = Trainer(
 )
 
 print("Training ...")
+
+# Finetune model
 trainer.train()
-trainer.save_model(params.trained_model_dir)
+
+trainer.push_to_hub()
+#trainer.save_model(params.trained_model_dir)
 
 print(f"Finished training, model stored in {params.trained_model_dir}")
 

@@ -38,7 +38,7 @@ else:
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
     documents = text_splitter.split_documents(documents)
 
-    # Store chunks (after embedding) in vector database
+    # Computes text embeddings and store them in vector database
     db = FAISS.from_documents(documents, embeddings)
     db.save_local(vector_db_dir)
 
@@ -77,7 +77,7 @@ rag_chain = (
 
 # todo next steps: add chat history https://python.langchain.com/docs/use_cases/question_answering/chat_history
 
-# Testing
+# Testing difference between using RAG and without RAG
 prompt_without_rag = PromptTemplate.from_template("""Answer the question at the end.
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
 Use three sentences maximum and keep the answer as concise as possible.
@@ -90,7 +90,7 @@ sample_q = "Was ist der HELLER Lernfabrik?"
 
 chain_without_rag = {"question": RunnablePassthrough()} | prompt_without_rag | llm | StrOutputParser()
 plain_a = chain_without_rag.invoke(sample_q)
-# textwrap just to limit number of words in each line
+# textwrap used to limit number of words in each line
 rag_a = '\n'.join(textwrap.wrap(rag_chain.invoke(sample_q), 100))
 
 print(f'Q: {sample_q}\n')

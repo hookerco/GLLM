@@ -1,5 +1,7 @@
 ### Todo: Python version, test requirements.txt
 ### for starcoder2, need to install transformers from source (https://huggingface.co/bigcode/starcoder2-7b)
+### screen on gpu server -> https://www.howtogeek.com/662422/how-to-use-linuxs-screen-command/
+### todo: efficient inference
 ### Chatbot
 ```chatbot.py``` contains a simple web application to test different LLMs for human-machine interfaces, built using streamlit.
 
@@ -33,9 +35,19 @@ To use this dataset, you need to log in to Hugging Face in your terminal by:
 To load this dataset, use ```ds = load_dataset("bigcode/the-stack", data_dir="data/g-code", split="train")```
 
 
+So far, training is limited to models with 3B parameters due to memory limitations. I tested methods for more efficient training
+[huggingface link](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one#using--accelerate)
+such as setting smaller batch size, gradient accumulation and checkpointing, mixed precision training, setting device_map='auto'
+when loading model, but nothing works so far
+
+
 
 #### Starcoder
 To use the Starcoder model, you need to be granted access to the model. To do this,
 - Log in to Hugging Face in a terminal like described above
 - Log in to the Hugging Face website, go to [bigcode/starcoder](https://huggingface.co/bigcode/starcoder)
 - Accept the conditions to access model files and content.
+
+#### Helpful resources:
+https://github.com/huggingface/notebooks/blob/main/examples/language_modeling.ipynb
+https://huggingface.co/docs/transformers/training

@@ -14,3 +14,4 @@ sentence_transformers
 peft
 nltk
 evaluate
+huggingface_hub[cli]

@@ -106,7 +106,7 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
 #         repetition_penalty=1.0,
 #     )
 #     return tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
-#
+
 # from peft import PeftModel
 # base_model = 'WizardLM/WizardCoder-3B-V1.0'
 # finetuned_params = "finetuned_model"
@@ -178,6 +178,9 @@ def group_texts(examples, block_size=128):
 #lm_dataset = tokenized_dataset.map(group_texts, batched=True)
 #print(np.array(lm_dataset['train']['input_ids']).shape)
 
-model = AutoModelForCausalLM.from_pretrained('WizardLM/WizardCoder-3B-V1.0', device_map="cpu")
+################################################################################################
+# Testing inference on cpu
 
-print(model)
+pipe = pipeline(model='WizardLM/WizardCoder-3B-V1.0')
+response = pipe("Generate G-code for milling")
+print(response)
