@@ -180,7 +180,16 @@ def group_texts(examples, block_size=128):
 
 ################################################################################################
 # Testing inference on cpu
+import time
+from transformers import GenerationConfig
 
-pipe = pipeline(model='WizardLM/WizardCoder-3B-V1.0')
-response = pipe("Generate G-code for milling")
+# todo set max_new_tokens (default:20)
+pipe = pipeline(model='slokad/WizardCoder-finetuned')
+conf = GenerationConfig()
+
+start = time.time()
+response = pipe("Please Generate G-code for milling:")
+end = time.time()
+minutes = (end - start)/60
+print(f"elapsed time: {minutes} minutes")
 print(response)

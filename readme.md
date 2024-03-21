@@ -10,7 +10,7 @@ To run this program, follow these steps:
   <li> Create a virtual environment and install required 
     packages by running <code>pip install -r requirements.txt</code>
   </li>
-  <li> Register at <a href="https://huggingface.co">Hugging Face</a> and get an API token in your profile settings </li>
+  <li> Register or login at <a href="https://huggingface.co">Hugging Face</a> and create an API token in your profile settings </li>
   <li> Add a file called <code>secrets.toml</code> in the folder called <code>.streamlit</code> at the root of your repo, and provide your Hugging Face API token by typing <code>huggingface_token = "..."</code>
   <li> Run the application by running <code>streamlit run chatbot.py</code> in the terminal at the root of the repo. </li> 
 </ol>
@@ -35,19 +35,28 @@ To use this dataset, you need to log in to Hugging Face in your terminal by:
 To load this dataset, use ```ds = load_dataset("bigcode/the-stack", data_dir="data/g-code", split="train")```
 
 
-So far, training is limited to models with 3B parameters due to memory limitations. I tested methods for more efficient training
+So far, training is limited to models with <3B parameters due to memory limitations. 
+Training code works for these models:
+- WizardLM/WizardCoder-3B-V1.0
+- bigcode/starcoderbase-3b
+
+I tested methods for more efficient training
 [huggingface link](https://huggingface.co/docs/transformers/main/en/perf_train_gpu_one#using--accelerate)
 such as setting smaller batch size, gradient accumulation and checkpointing, mixed precision training, setting device_map='auto'
 when loading model, but nothing works so far
 
-
-
+To push model to hub after finetuning, make sure you are logged in via cli (provide token that has write permission)
 #### Starcoder
 To use the Starcoder model, you need to be granted access to the model. To do this,
 - Log in to Hugging Face in a terminal like described above
 - Log in to the Hugging Face website, go to [bigcode/starcoder](https://huggingface.co/bigcode/starcoder)
 - Accept the conditions to access model files and content.
 
+It is recommended to use the StarCoder tech assistant prompt, since the model is only trained on code completion.
+
+https://huggingface.co/blog/starcoder
+
 #### Helpful resources:
 https://github.com/huggingface/notebooks/blob/main/examples/language_modeling.ipynb
 https://huggingface.co/docs/transformers/training
+https://huggingface.co/docs/transformers/tasks/language_modeling

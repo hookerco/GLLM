@@ -161,7 +161,7 @@ data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 # Set parameters for training
 model_name = params.model_path.split("/")[-1]
 training_args = TrainingArguments(
-    f"{model_name}-finetuned-{args.dataset}",
+    f'{model_name.split("-")[0]}-finetuned-{args.dataset}',
     per_device_train_batch_size=params.batch_size,
     # output_dir=params.trained_model_dir,
     evaluation_strategy=params.evaluation_strategy,
@@ -191,7 +191,8 @@ trainer.train()
 trainer.push_to_hub()
 #trainer.save_model(params.trained_model_dir)
 
-print(f"Finished training, model stored in {params.trained_model_dir}")
+#print(f"Finished training, model stored in {params.trained_model_dir}")
+print(f"Finished training, model uploaded to huggingface")
 
 # Evaluate finetuned model
 eval_results = trainer.evaluate()
