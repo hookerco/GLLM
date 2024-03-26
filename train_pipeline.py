@@ -1,7 +1,7 @@
 from pdfminer.high_level import extract_text
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer, \
-    DataCollatorForLanguageModeling
+    DataCollatorForLanguageModeling, pipeline
 from peft import LoraConfig, TaskType, get_peft_model
 from glob import glob
 from types import SimpleNamespace
@@ -9,6 +9,7 @@ from functools import partial
 from pathlib import Path
 import torch
 import os
+import time
 import math
 import argparse
 
@@ -42,7 +43,6 @@ args = parser.parse_args()
 # Check if GPU can be used
 cuda_available = torch.cuda.is_available()
 device = 'cuda' if cuda_available else 'cpu'
-#torch.set_default_device(device)
 print(f"GPU is available: {cuda_available}")
 
 #################################### Define parameters
@@ -154,14 +154,15 @@ lora_config = LoraConfig(
 model = get_peft_model(AutoModelForCausalLM.from_pretrained(params.model_path), lora_config)
 model.print_trainable_parameters()
 
-# Build batches, use the inputs as labels shifted to the right by one element:
+# Build batches, use the inputs shifted to the right by one element as labels
 tokenizer.pad_token = tokenizer.eos_token
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
 # Set parameters for training
 model_name = params.model_path.split("/")[-1]
+model_name_finetuned = f'{model_name.split("-")[0]}-finetuned-{args.dataset}'
 training_args = TrainingArguments(
-    f'{model_name.split("-")[0]}-finetuned-{args.dataset}',
+    model_name_finetuned,
     per_device_train_batch_size=params.batch_size,
     # output_dir=params.trained_model_dir,
     evaluation_strategy=params.evaluation_strategy,
@@ -169,12 +170,13 @@ training_args = TrainingArguments(
     weight_decay=params.weight_decay,
     push_to_hub=params.push_to_hub,
     fp16=params.fp16
+
     # gradient_accumulation_steps=params.gradient_accumulation_steps,
     # gradient_checkpointing=params.gradient_checkpointing
-    #   -> these produce RuntimeError: element 0 of tensors does not require grad and does not have a grad_fn
+    # doesn't work -> these produce RuntimeError: element 0 of tensors does not require grad and does not have a grad_fn
 )
 
-# Define trainer (provide LLM model, training parameters, datasets for training)
+# Define trainer (provide LLM, training parameters, datasets for training)
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -188,12 +190,26 @@ print("Training ...")
 # Finetune model
 trainer.train()
 
+# Upload finetuned model to Hugging Face
 trainer.push_to_hub()
-#trainer.save_model(params.trained_model_dir)
-
-#print(f"Finished training, model stored in {params.trained_model_dir}")
 print(f"Finished training, model uploaded to huggingface")
+
+# Save finetuned model locally
+# trainer.save_model(params.trained_model_dir)
+# print(f"Finished training, model stored in {params.trained_model_dir}")
 
 # Evaluate finetuned model
 eval_results = trainer.evaluate()
 print(f"Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
+
+# Test inference
+pipe = pipeline(model=f'slokad/{model_name_finetuned}')     # todo change username
+start = time.time()
+prompt = "Please Generate G-code for milling:"
+response = pipe(prompt)
+end = time.time()
+minutes = (end - start)/60
+
+print(f"elapsed time: {minutes} minutes")
+print(f"Q: {prompt}")
+print(f"A: {response}")

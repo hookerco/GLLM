@@ -1,7 +1,7 @@
-### Todo: Python version, test requirements.txt
-### for starcoder2, need to install transformers from source (https://huggingface.co/bigcode/starcoder2-7b)
-### screen on gpu server -> https://www.howtogeek.com/662422/how-to-use-linuxs-screen-command/
-### todo: efficient inference
+## Readme
+
+This repository consists of several python scripts that are at the moment independent of each other 
+
 ### Chatbot
 ```chatbot.py``` contains a simple web application to test different LLMs for human-machine interfaces, built using streamlit.
 
