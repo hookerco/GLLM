@@ -52,7 +52,7 @@ retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 6})
 
 # todo: replace later with finetuned model
 llm = HuggingFaceHub(repo_id='HuggingFaceH4/zephyr-7b-beta',
-                     model_kwargs={"temperature": 0.9, "max_length": 500})
+                     model_kwargs={"temperature": 0.5, "max_length": 1000, "max_new_tokens": 1000})
 
 template = """Use the following pieces of context to answer the question at the end.
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
