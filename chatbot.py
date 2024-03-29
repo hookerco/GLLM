@@ -53,6 +53,8 @@ for details to fill that template.
 
 prompt = PromptTemplate.from_template(template)
 
+############################## Frontend
+
 st.title("💬 Chatbot")
 
 # Initialize chat history
@@ -70,10 +72,12 @@ if msg := st.chat_input("How can I help you?"):
 
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": msg})
-    # Display user message in chat message container
+    # Display user message in frontend
     st.chat_message("user").write(msg)
 
     response = chain.invoke({'question': msg})
 
+    # Add LLM response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
+    # Display LLM response in frontend
     st.chat_message("assistant").write(response)

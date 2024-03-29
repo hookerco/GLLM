@@ -6,8 +6,6 @@ of LLM-related tasks.
 ### Setup
 Create a virtual environment with Python 3.11 and install required packages by running <code>pip install -r requirements.txt</code>
 
-Python version used during development: Python 3.11.8
-
 ### Chatbot
 ```chatbot.py``` contains a simple web application to test different LLMs for human-machine interfaces, built using streamlit.
 
