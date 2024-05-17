@@ -1,4 +1,4 @@
-## Readme
+# GLLM: G-Code generation using open-source LLM models
 
 This repository consists of several python scripts that are at the moment independent of each other, containing implementations
 of LLM-related tasks.
