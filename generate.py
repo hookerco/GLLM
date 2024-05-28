@@ -37,6 +37,7 @@ Machining Parameters:
 Safety Considerations:
   - Rapid Retract Height: 10 mm
   - Tool Clearance: 2 mm
+
 """
 
 # Encode the instructions and generate the G-code

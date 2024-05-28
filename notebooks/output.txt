@@ -1,0 +1,99 @@
+write a G-code to make a circle whose radius is 20mm with depth 2mm on a steel workpiece whose dimensions are 50mm x 50mm with depth 10mm. The circle should be in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution. 
+#
+# The following code is a G-code for a circle with radius 20mm and depth 2mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z20 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 10mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z10 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 20mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z20 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 30mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z30 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 40mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z40 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 50mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z50 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 60mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z60 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 70mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z70 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 80mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z80 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 90mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z90 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 100mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z100 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 110mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z110 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 120mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z120 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 130mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z130 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 140mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z140 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 150mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z150 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 160mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z160 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 170mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z170 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 180mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z180 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 190mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z190 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 200mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z200 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 210mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z210 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 220mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z220 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 230mm. The circle is in the middle of the workpiece and the cutting tool should return to the initial position at the end of the execution.
+#
+# G1 X100 Y100 Z230 F3000
+#
+# The following code is a G-code for a circle with radius 20mm and depth 2
