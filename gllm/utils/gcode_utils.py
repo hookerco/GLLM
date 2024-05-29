@@ -1,6 +1,6 @@
 import re
 import streamlit as st
-from utils.plot_path import plot_gcode
+from utils.plot_utils import plot_gcode
 from utils.prompts_utils import REQUIRED_PARAMETERS
 
 

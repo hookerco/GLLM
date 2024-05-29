@@ -67,6 +67,7 @@ def plot_gcode(gcode):
 
         # Handle circular interpolation if present
         elif 'G02' in command or 'G2' in command or 'G03' in command or 'G3' in command:
+            print("plotting Circualar shape!")
             # Circular interpolation
             coords = parse_coordinates(command)
             i_center = coords.get('I', 0)
@@ -82,7 +83,8 @@ def plot_gcode(gcode):
             else:
                 center_x = x + i_center
                 center_y = y + j_center
-
+            
+            # Determine the end position
             if 'X' in coords and 'Y' in coords:
                 x_end = coords.get('X', x)
                 y_end = coords.get('Y', y)
@@ -90,11 +92,12 @@ def plot_gcode(gcode):
                 # If no end coordinates are provided, compute them assuming a complete circle
                 x_end = x
                 y_end = y
-                print(x_end, y_end)
 
+            # Calculate angles for the arc
             start_angle = np.arctan2(y - center_y, x - center_x)
             end_angle = np.arctan2(y_end - center_y, x_end - center_x)
 
+            # Generate points along the arc
             if 'G02' in command or 'G2' in command:  # Clockwise
                 if start_angle <= end_angle:
                     start_angle += 2 * np.pi
@@ -109,8 +112,9 @@ def plot_gcode(gcode):
             arc_y = center_y + radius * np.sin(angles) if radius is not None else center_y + np.sqrt(i_center**2 + j_center**2) * np.sin(angles)
             x_points.extend(arc_x)
             y_points.extend(arc_y)
-            x = x_end
-            y = y_end
+            print(x_points,y_points) 
+            # Update current position to end of arc
+            x, y = x_end, y_end
     
     plt.figure(figsize=(10, 6))
     plt.plot(x_points, y_points, marker='o')

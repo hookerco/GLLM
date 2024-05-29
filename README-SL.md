@@ -1,51 +1,10 @@
 # GLLM: G-Code generation using open-source LLM models
 
-This repository contains scripts for generating and validating G-codes automatically-generated using various LLM pipelines.
+This repository consists of several python scripts that are at the moment independent of each other, containing implementations
+of LLM-related tasks.
 
-## Setup
-
-### Clone with submodules
-
-```shell
-git clone https://git.sagresearch.de/slok/llm_for_hmi.git --recurse-submodules
-```
-
-### Install requirements
-
-This project uses Python3.11. If not installed, you may install it via:  
-```shell
-sudo apt update
-sudo apt install python3.11
-```
-
-Then, install poetry and guide it to use python 3.11
-```shell
-pipx install poetry
-poetry env use /usr/bin/python3.11
-```
-
-Then, install the requirements
-```shell
-poetry install
-```
-
-To use `Huggingface` models, it is required to save the API access token as an environment variable.
-Open your shell's configuration file in a text editor: 
-```shell
-vim ~/.bashrc
-```
-Add the following line to the end of the file:
-```shell
-export HUGGINGFACEHUB_API_TOKEN="YourHFTokenHere"
-```
-Save and close the file. To apply the changes, source the file or restart your terminal:
-```shell
-source ~/.bashrc
-```
-
-To use `OpenAI` models, add the access token <code>openai_token = "YourOpenAITokenHere" </code> to `.streamlit/secrets.toml`.
-
-## Project Scripts
+### Setup
+Create a virtual environment with Python 3.11 and install required packages by running <code>pip install -r requirements.txt</code>
 
 ### Chatbot
 ```chatbot.py``` contains a simple web application to test different LLMs for human-machine interfaces, built using streamlit.
