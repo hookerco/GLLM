@@ -2,11 +2,11 @@ import os
 import toml
 import openai
 from peft import PeftModel, PeftConfig
-from transformers import AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, pipeline 
 from langchain_openai import ChatOpenAI
 from utils.prompts_utils import SYSTEM_MESSAGE
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_community.llms import HuggingFaceEndpoint
+from langchain_community.llms import HuggingFaceEndpoint, HuggingFacePipeline
 from langchain_community.chat_models.huggingface import ChatHuggingFace
 
 
@@ -39,6 +39,13 @@ def setup_model(model:str):
     elif model == "GPT-3.5":
         #llm = OpenAI(api_key=openai.api_key)
         llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.7, api_key=openai.api_key)
+
+    # elif model == 'Codestral':
+    #     #pipe = pipeline("text-generation", model="mistralai/Codestral-22B-v0.1", force_download=True)
+    #     #llm = HuggingFacePipeline(pipeline=pipe)
+    #     llm = AutoModelForCausalLM.from_pretrained("mistralai/Codestral-22B-v0.1")
+        
+
 
     return llm
 

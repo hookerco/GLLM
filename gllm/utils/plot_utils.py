@@ -32,25 +32,14 @@ def plot_gcode(gcode):
     for command in gcode.splitlines():
         
         command = command.split(';')[0].strip()  # Remove comments and trim
+        
         if not command:
             continue
-        
-        if 'G21' in command:
-            # Set units to millimeters (default assumption)
-            pass
-        elif 'G17' in command:
-            # Select XY plane (default assumption)
-            pass
-        elif 'G90' in command:
-            # Set to absolute positioning (default assumption)
-            pass
-        elif 'M06' in command:
-            # Tool change (assume tool is ready)
-            pass
         elif 'M30' in command:
             # End of program
             break
-        elif 'G00' in command or 'G0' in command:
+        elif 'G00' in command or 'G0 ' in command:
+            print("rapid positioning", command)
             # Rapid positioning
             coords = parse_coordinates(command)
             x = coords.get('X', x)
@@ -59,15 +48,15 @@ def plot_gcode(gcode):
             y_points.append(y)
         elif 'G01' in command or 'G1' in command:
             # Linear interpolation
+            print("linear interpolation", command)
             coords = parse_coordinates(command)
             x = coords.get('X', x)
             y = coords.get('Y', y)
             x_points.append(x)
             y_points.append(y)
-
         # Handle circular interpolation if present
         elif 'G02' in command or 'G2' in command or 'G03' in command or 'G3' in command:
-            print("plotting Circualar shape!")
+            print("plotting Circualar shape!", command)
             # Circular interpolation
             coords = parse_coordinates(command)
             i_center = coords.get('I', 0)
@@ -115,6 +104,10 @@ def plot_gcode(gcode):
             print(x_points,y_points) 
             # Update current position to end of arc
             x, y = x_end, y_end
+        
+        else:
+            # skipp all other irrelevant commands
+            continue
     
     plt.figure(figsize=(10, 6))
     plt.plot(x_points, y_points, marker='o')

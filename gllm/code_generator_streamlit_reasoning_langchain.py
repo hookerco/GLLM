@@ -2,7 +2,7 @@ import streamlit as st
 from utils.rag_utils import setup_langchain_with_rag
 from utils.model_utils import setup_model, setup_langchain_without_rag
 from utils.params_extraction_utils import extract_parameters_logic, display_extracted_parameters
-from utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode
+from utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode, validate_gcode
 
 
 def main():
@@ -36,6 +36,9 @@ def main():
     if st.button("Generate G-code") and "langchain_chain" in st.session_state:
         generate_gcode_logic(st.session_state['langchain_chain'])
 
+        while not validate_gcode(st.session_state['gcode']):
+            generate_gcode_logic(st.session_state['langchain_chain'])
+    
     display_generated_gcode()
 
     plot_generated_gcode()
