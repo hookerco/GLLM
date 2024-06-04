@@ -1,3 +1,4 @@
+import openai
 from langchain import hub
 from PyPDF2 import PdfReader
 from langchain_openai import OpenAIEmbeddings
