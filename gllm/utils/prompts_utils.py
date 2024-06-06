@@ -43,6 +43,7 @@ REQUIRED_PARAMETERS = [
     "Operation Type",
     "Desired Shape",
     "Shape Dimensions",
+    "Shape Location",
     "Home Position",
     "Workpiece Dimensions",
     "Coordinates",

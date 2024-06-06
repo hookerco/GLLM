@@ -39,6 +39,7 @@ def extract_parameters_with_langchain(chain, task_description):
         "Operation Type: \n"
         "Desired Shape: \n"
         "Shape Dimensions: \n"
+        "Shape Location: \n"
         "Home Position: \n"
         "Workpiece Dimensions: \n"
         "Coordinates: \n"

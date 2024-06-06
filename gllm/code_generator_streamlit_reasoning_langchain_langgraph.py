@@ -1,11 +1,20 @@
+import uuid
 import streamlit as st
 from utils.rag_utils import setup_langchain_with_rag
 from utils.model_utils import setup_model, setup_langchain_without_rag
 from utils.params_extraction_utils import extract_parameters_logic, display_extracted_parameters
-from utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode, validate_gcode
+from utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode, validate_gcode, clean_gcode
+from utils.graph_utils import construct_graph, _print_event
 
 
 def main():
+
+    _printed = set()
+    thread_id = str(uuid.uuid4())
+    config = {
+        "configurable": {
+            # Checkpoints are accessed by thread_id
+            "thread_id": thread_id,}}
 
     st.title("G-code Generator for CNC Machines")
     st.write("Please describe your CNC machining task in natural language:")
@@ -35,10 +44,18 @@ def main():
     display_extracted_parameters()
 
     if st.button("Generate G-code") and "langchain_chain" in st.session_state:
-        generate_gcode_logic(st.session_state['langchain_chain'])
+        #generate_gcode_logic(st.session_state['langchain_chain'])
 
-        while not validate_gcode(st.session_state['gcode']):
-            generate_gcode_logic(st.session_state['langchain_chain'])
+        graph = construct_graph(st.session_state['langchain_chain'], st.session_state['user_inputs'])
+        events = graph.stream({"messages": [("user", task_description)], "iterations": 0}, config, stream_mode="values")
+        for event in events:
+            _print_event(event, _printed)
+
+        #cleaned_gcode = clean_gcode(event['generation'])
+        st.session_state['gcode'] = event['generation']
+
+        # while not validate_gcode(st.session_state['gcode']):
+        #     generate_gcode_logic(st.session_state['langchain_chain'])
     
     display_generated_gcode()
 

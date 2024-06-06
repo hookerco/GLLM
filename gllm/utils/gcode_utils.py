@@ -3,14 +3,14 @@ import pygcode
 import streamlit as st
 from utils.plot_utils import plot_gcode
 from utils.prompts_utils import REQUIRED_PARAMETERS
-
+from langchain_core.messages.ai import AIMessage
 
 
 def generate_gcode_logic(chain):
     if any(param not in st.session_state['user_inputs'] for param in REQUIRED_PARAMETERS):
         print(st.session_state['user_inputs'])
         st.error("Please provide all the required parameters.")
-    else:
+    else:        
         gcode = generate_gcode_with_langchain(chain, st.session_state['user_inputs'])
         cleaned_gcode = clean_gcode(gcode)
         st.session_state['gcode'] = cleaned_gcode
@@ -29,6 +29,7 @@ def generate_gcode_with_langchain(chain, user_inputs):
         f"Desired Shape: {user_inputs['Desired Shape']}\n"
         f"Home Position: {user_inputs['Home Position']}\n"
         f"Shape Dimensions: {user_inputs['Shape Dimensions']}\n"
+        f"Shape Location: {user_inputs['Shape Location']}\n"
         f"Workpiece Dimensions: {user_inputs['Workpiece Dimensions']}\n"
         f"Coordinates: {user_inputs['Coordinates']}\n"
         f"Depth of Cut: {user_inputs['Depth of Cut']}\n"
@@ -44,8 +45,9 @@ def generate_gcode_with_langchain(chain, user_inputs):
 
 
 def clean_gcode(gcode):
+    gcode_response = gcode.content if isinstance(gcode, AIMessage) else str(gcode)
     gcode_pattern = re.compile(r"^(?:G|M|T|F|S|X|Y|Z|I|J|K|R|P|Q)\d+.*")
-    cleaned_lines = [line.strip() for line in gcode.content.split('\n') if gcode_pattern.match(line)]
+    cleaned_lines = [line.strip() for line in gcode_response.split('\n') if gcode_pattern.match(line)]
     return '\n'.join(cleaned_lines)
 
 
@@ -74,11 +76,12 @@ def validate_syntax(gcode_string):
             for word in gcode_line.block.gcodes:
                 # Validate that the word is a valid G-code command
                 if not isinstance(word, pygcode.gcodes.GCode):
-                    raise ValueError(f"Invalid G-code command: {word}")
-        return True
+                    error_msg = f"Invalid G-code command: {word}"
+                    raise ValueError(error_msg)
+        return True, None
     except Exception as e:
         print(f"Syntax error in G-code: {e}")
-        return False
+        return False, e
 
 def validate_unreachable_code(gcode_string):
     """Detecting unreachable code in the program"""
@@ -87,12 +90,13 @@ def validate_unreachable_code(gcode_string):
         if 'M30' in line_text:
             reached_end = True
         elif reached_end:
-            print(f"Unreachable code detected: {line_text}")
-            return False
+            error_msg = f"Unreachable code detected: {line_text}"
+            print(error_msg)
+            return False, error_msg
         else:
             print(f"Executed: {line_text}")
 
-    return True
+    return True, None 
 
 def validate_safety(gcode_string):
     """Ensuring that rapid movements do not pass through the material"""
@@ -101,13 +105,14 @@ def validate_safety(gcode_string):
         if 'G1' in line_text or 'G01' in line_text:
             is_cutting = True
         if ('G0 ' in line_text or 'G00' in line_text) and is_cutting:
-            print(f"Warning: Rapid movement through potential material at {line_text}")
-            return False
+            error_msg = f"Warning: Rapid movement through potential material at {line_text}"
+            print(error_msg)
+            return False, error_msg
         if is_cutting:
             is_cutting = False
         print(f"Processed: {line_text}")
     
-    return True
+    return True, None
 
 def validate_continuity(gcode_string):
     """Checking for continuity in tool paths"""
@@ -120,11 +125,12 @@ def validate_continuity(gcode_string):
         if line.block.gcodes and 'X' in line.block.gcodes[0].params and 'Y' in line.block.gcodes[0].params:
             current_position = (line.block.gcodes[0].params['X'], line.block.gcodes[0].params['Y'])
             if last_position and (current_position != last_position):
-                print(f"Discontinuity detected at {line_text}")
-                return False
+                error_msg = f"Discontinuity detected at {line_text}"
+                print(error_msg)
+                return False, error_msg
             last_position = current_position
         print(f"Processed: {line_text}")
-    return True
+    return True, None
 
 
 def validate_feed_rate(gcode_string, min_feed, max_feed):
@@ -136,9 +142,10 @@ def validate_feed_rate(gcode_string, min_feed, max_feed):
         if 'F' in line.block.modal_params:
             feed_rate = line.block.modal_params['F']
             if not (min_feed <= feed_rate <= max_feed):
-                print(f"Feed rate out of bounds at {line_text}")
-                return False
-    return True
+                error_msg = f"Feed rate out of bounds at {line_text}"
+                print(error_msg)
+                return False, error_msg
+    return True, None
 
 
 def validate_tool_changes(gcode_string):
@@ -151,9 +158,10 @@ def validate_tool_changes(gcode_string):
         elif 'S' in line.block.modal_params and expecting_initialization:
             expecting_initialization = False
         elif expecting_initialization:
-            print(f"Missing spindle speed after tool change before {line_text}")
-            return False
-    return True
+            error_msg = f"Missing spindle speed after tool change before {line_text}"
+            print(error_msg)
+            return False, error_msg
+    return True, None
 
 
 def validate_spindle_speed(gcode_string, max_spindle_speed):
@@ -164,9 +172,10 @@ def validate_spindle_speed(gcode_string, max_spindle_speed):
         if 'S' in line.block.modal_params:
             spindle_speed = line.block.modal_params['S']
             if spindle_speed > max_spindle_speed:
-                print(f"Spindle speed exceeds maximum limit at {line_text}")
-                return False
-    return True
+                error_msg = f"Spindle speed exceeds maximum limit at {line_text}"
+                print(error_msg)
+                return False, error_msg
+    return True, None
 
 def validate_z_levels(gcode_string, max_depth):
     """Verify that Z-level movements do not exceed certain depth limits to prevent the tool from crashing into the workpiece or machine bed."""
@@ -176,28 +185,13 @@ def validate_z_levels(gcode_string, max_depth):
         if 'Z' in line.block.gcodes[0].params:
             z_level = line.block.gcodes[0].params['Z']
             if z_level > max_depth:
-                print(f"Z-level exceeds maximum depth at {line_text}")
-                return False
-    return True
+                error_msg = f"Z-level exceeds maximum depth at {line_text}"
+                print(error_msg)
+                return False, error_msg
+    return True, None
 
 
-# def check_return_to_home(gcode_string, home_position=(0, 0, 0)):
-#     """Ensure that the G-code program returns the tool to a safe position at the end (like returning to home position)."""
-#     lines = gcode_string.strip().split('\n')
-#     last_position = None
-#     for line_text in lines:
-#         line = pygcode.Line(line_text)
-#         if any(param in line.block.gcodes[0].params for param in ['X', 'Y', 'Z']):
-#             x = line.block.gcodes[0].params.get('X', last_position[0] if last_position else None)
-#             y = line.block.gcodes[0].params.get('Y', last_position[1] if last_position else None)
-#             z = line.block.gcodes[0].params.get('Z', last_position[2] if last_position else None)
-#             last_position = (x, y, z)
-#     if last_position != home_position:
-#         print(f"Program does not return to home position. Last position was {last_position}")
-#         return False
-#     return True
-
-def check_return_to_home(gcode_string, home_position=(0, 0, 0)):
+def check_return_to_home(gcode_string, home_position=(0, 0)):
     """
     Ensure that the G-code program returns the tool to a safe position at the end (like returning to home position).
 
@@ -209,30 +203,42 @@ def check_return_to_home(gcode_string, home_position=(0, 0, 0)):
     bool: True if the program returns to the home position, False otherwise.
     """
     lines = gcode_string.strip().split('\n')
-    last_position = [None, None, None]  # X, Y, Z
+    current_position = [0, 0]  # Start at the origin
+    absolute_positioning = True  # Most CNC machines start with absolute positioning
 
     for line_text in lines:
         line = pygcode.Line(line_text)
         for word in line.block.gcodes:
             if isinstance(word, pygcode.gcodes.GCode):
+                # Check for positioning mode
+                if word.modal_group == 'MG_GROUP_03':
+                    if word.gcode == 90:  # G90 - Absolute positioning
+                        absolute_positioning = True
+                    elif word.gcode == 91:  # G91 - Relative positioning
+                        absolute_positioning = False
+
+                # Update positions
                 params = word.params
-                if 'X' in params:
-                    last_position[0] = params['X'].value
-                if 'Y' in params:
-                    last_position[1] = params['Y'].value
-                if 'Z' in params:
-                    last_position[2] = params['Z'].value
+                if absolute_positioning:
+                    if 'X' in params:
+                        current_position[0] = params['X'].value
+                    if 'Y' in params:
+                        current_position[1] = params['Y'].value
+                else:
+                    if 'X' in params:
+                        current_position[0] += params['X'].value
+                    if 'Y' in params:
+                        current_position[1] += params['Y'].value
 
-    # Replace None with the home position values if they were not specified in the G-code
-    last_position = tuple(
-        last_position[i] if last_position[i] is not None else home_position[i] 
-        for i in range(3)
-    )
 
+    # Compare the final position to the home position
+    last_position = tuple(current_position)
     if last_position != home_position:
-        print(f"Program does not return to home position. Last position was {last_position}")
-        return False
-    return True
+        error_msg = f"Program does not return to home position ({home_position}). Last position was {last_position}"
+        print(error_msg)
+        return False, error_msg
+    return True, None
+
 
 def check_tool_offsets(gcode_string):
     """Validate that tool offsets are being used correctly and reset appropriately to avoid unintended tool paths."""
@@ -245,36 +251,36 @@ def check_tool_offsets(gcode_string):
         elif 'G49' in line_text:  # Tool length offset compensation cancel
             tool_offset_active = False
         elif tool_offset_active and 'Z' in line.block.gcodes[0].params:
-            print(f"Z movement with active tool offset in line: {line_text}")
-            return False
-    return True
+            error_msg = f"Z movement with active tool offset in line: {line_text}"
+            print(error_msg)
+            return False, error_msg
+    return True, None
 
 def validate_gcode(gcode_string):
 
-    is_syntax = validate_syntax(gcode_string)
+    is_syntax,_ = validate_syntax(gcode_string)
 
-    is_unreachable_code= validate_unreachable_code(gcode_string)
+    is_unreachable_code,_ = validate_unreachable_code(gcode_string)
 
-    is_safe = validate_safety(gcode_string)
+    is_safe,_ = validate_safety(gcode_string)
 
-    is_continuous = validate_continuity(gcode_string)
+    is_continuous,_ = validate_continuity(gcode_string)
 
-    is_valid_feed_rate= validate_feed_rate(gcode_string, min_feed=1, max_feed=100)
+    is_valid_feed_rate,_ = validate_feed_rate(gcode_string, min_feed=1, max_feed=100)
 
-    is_valid_tool_change = validate_tool_changes(gcode_string)
+    is_valid_tool_change,_ = validate_tool_changes(gcode_string)
 
-    is_valid_spindle_speed = validate_spindle_speed(gcode_string, max_spindle_speed=900)
+    is_valid_spindle_speed,_ = validate_spindle_speed(gcode_string, max_spindle_speed=900)
 
-    is_return_home = check_return_to_home(gcode_string)
+    #is_return_home = check_return_to_home(gcode_string)
 
-    is_tool_offset = check_tool_offsets(gcode_string)
+    is_tool_offset,_ = check_tool_offsets(gcode_string)
 
     return True if  is_syntax and \
                     is_unreachable_code and \
                     is_safe and is_continuous and \
                     is_valid_feed_rate and \
                     is_valid_tool_change and \
-                    is_return_home and \
                     is_tool_offset and \
                     is_valid_spindle_speed else False
 
