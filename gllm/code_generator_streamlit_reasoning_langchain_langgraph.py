@@ -14,7 +14,8 @@ def main():
     config = {
         "configurable": {
             # Checkpoints are accessed by thread_id
-            "thread_id": thread_id,}}
+            "thread_id": thread_id,},
+            "recursion_limit": 1000}
 
     st.title("G-code Generator for CNC Machines")
     st.write("Please describe your CNC machining task in natural language:")

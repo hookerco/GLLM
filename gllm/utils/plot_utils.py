@@ -23,11 +23,11 @@ def parse_coordinates(command):
     return coord_dict
 
 
-def plot_gcode(gcode):
+def parse_gcode(gcode):
     x_points, y_points = [], []
     x, y = 0, 0  # Initialize starting point
-    x_points.append(x)
-    y_points.append(y)
+    # x_points.append(x)
+    # y_points.append(y)
     
     for command in gcode.splitlines():
         
@@ -44,18 +44,20 @@ def plot_gcode(gcode):
             coords = parse_coordinates(command)
             x = coords.get('X', x)
             y = coords.get('Y', y)
+            print(command, x, y)
             x_points.append(x)
             y_points.append(y)
-        elif 'G01' in command or 'G1' in command:
+        elif 'G01' in command or 'G1 ' in command:
             # Linear interpolation
             print("linear interpolation", command)
             coords = parse_coordinates(command)
+            print(command, x, y)
             x = coords.get('X', x)
             y = coords.get('Y', y)
             x_points.append(x)
             y_points.append(y)
         # Handle circular interpolation if present
-        elif 'G02' in command or 'G2' in command or 'G03' in command or 'G3' in command:
+        elif 'G02' in command or 'G2 ' in command or 'G03' in command or 'G3 ' in command:
             print("plotting Circualar shape!", command)
             # Circular interpolation
             coords = parse_coordinates(command)
@@ -95,13 +97,10 @@ def plot_gcode(gcode):
                     end_angle += 2 * np.pi
 
             angles = np.linspace(start_angle, end_angle, 100)
-            print(angles)
-            print(start_angle, end_angle)
             arc_x = center_x + radius * np.cos(angles) if radius is not None else center_x + np.sqrt(i_center**2 + j_center**2) * np.cos(angles)
             arc_y = center_y + radius * np.sin(angles) if radius is not None else center_y + np.sqrt(i_center**2 + j_center**2) * np.sin(angles)
             x_points.extend(arc_x)
             y_points.extend(arc_y)
-            print(x_points,y_points) 
             # Update current position to end of arc
             x, y = x_end, y_end
         
@@ -109,6 +108,13 @@ def plot_gcode(gcode):
             # skipp all other irrelevant commands
             continue
     
+    return x_points, y_points
+
+
+def plot_gcode(gcode):
+
+    x_points, y_points = parse_gcode(gcode)
+
     plt.figure(figsize=(10, 6))
     plt.plot(x_points, y_points, marker='o')
     plt.title('CNC Path Plot')

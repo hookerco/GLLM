@@ -4,10 +4,11 @@ from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 
-from utils.gcode_utils import generate_gcode_with_langchain, validate_syntax, validate_continuity, check_return_to_home, clean_gcode
+from utils.gcode_utils import generate_gcode_with_langchain, validate_syntax, validate_continuity, \
+                              clean_gcode, validate_unreachable_code, validate_safety, validate_drilling_gcode
 
 ### Parameters
-max_iterations = 3
+max_iterations = 50
 
 class GraphState(TypedDict):
     """
@@ -24,7 +25,6 @@ class GraphState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     generation: str
     iterations: int
-
 
 ### Nodes
 def generate(state: GraphState, chain, user_inputs):
@@ -58,8 +58,7 @@ def generate(state: GraphState, chain, user_inputs):
     iterations = iterations + 1
     return {"generation": gcode_response, "messages": messages, "iterations": iterations}
 
-
-def code_check(state: GraphState):
+def code_check(state: GraphState, chain, user_inputs):
     """
     Check code
 
@@ -92,7 +91,7 @@ def code_check(state: GraphState):
 
     # Check continuty
     is_continuous, continuity_error_msg = validate_continuity(code_solution)
-    if not is_continuous:
+    if not is_continuous and 'milling' in user_inputs['Operation Type']:
         print("---CONTINUITY CHECK: FAILED---")
         error_message = [("user", f"Your solution failed the code execution test: {continuity_error_msg}) Reflect on this error and your prior attempt to solve the problem. (1) State what you think went wrong with the prior solution and (2) try to solve this problem again. Return the FULL SOLUTION.")]
         messages += error_message
@@ -102,12 +101,12 @@ def code_check(state: GraphState):
             "iterations": iterations,
             "error": "yes",
         }
-    
-    # Check return to home position
-    is_return_to_home, return_error_msg = check_return_to_home(code_solution)
-    if not is_return_to_home:
-        print("---RETURN TO HOME CHECK: FAILED---")
-        error_message = [("user", f"Your solution failed the code execution test: {return_error_msg}) Reflect on this error and your prior attempt to solve the problem. (1) State what you think went wrong with the prior solution and (2) try to solve this problem again. Return the FULL SOLUTION.")]
+
+    # Check unreachable code
+    is_unreachable_code, unreachable_error_msg = validate_unreachable_code(code_solution)
+    if not is_unreachable_code:
+        print("---UNREACHABLE CODE CHECK: FAILED---")
+        error_message = [("user", f"Your solution failed the code execution test: {unreachable_error_msg}) Reflect on this error and your prior attempt to solve the problem. (1) State what you think went wrong with the prior solution and (2) try to solve this problem again. Return the FULL SOLUTION.")]
         messages += error_message
         return {
             "generation": code_solution,
@@ -115,6 +114,46 @@ def code_check(state: GraphState):
             "iterations": iterations,
             "error": "yes",
         }
+
+    # Check safety
+    is_safe_code, safety_error_msg = validate_safety(code_solution)
+    if not is_safe_code:
+        print("---SAFETY CHECK: FAILED---")
+        error_message = [("user", f"Your solution failed the code execution test: {safety_error_msg}) Reflect on this error and your prior attempt to solve the problem. (1) State what you think went wrong with the prior solution and (2) try to solve this problem again. Return the FULL SOLUTION.")]
+        messages += error_message
+        return {
+            "generation": code_solution,
+            "messages": messages,
+            "iterations": iterations,
+            "error": "yes",
+        }
+
+    # Check correct drilling
+    is_correct_drilling, drilling_error_msg = validate_drilling_gcode(code_solution)
+    if not is_correct_drilling and 'drilling' in user_inputs['Operation Type']:
+        print("---DRILLING CHECK: FAILED---")
+        error_message = [("user", f"Your solution failed the code execution test: {drilling_error_msg}) Reflect on this error and your prior attempt to solve the problem. (1) State what you think went wrong with the prior solution and (2) try to solve this problem again. Return the FULL SOLUTION.")]
+        messages += error_message
+        return {
+            "generation": code_solution,
+            "messages": messages,
+            "iterations": iterations,
+            "error": "yes",
+        }    
+    
+    
+    # Check return to home position
+    # is_return_to_home, return_error_msg = check_safe_return(code_solution)
+    # if not is_return_to_home:
+    #     print("---RETURN TO HOME CHECK: FAILED---")
+    #     error_message = [("user", f"Your solution failed the code execution test: {return_error_msg}) Reflect on this error and your prior attempt to solve the problem. (1) State what you think went wrong with the prior solution and (2) try to solve this problem again. Return the FULL SOLUTION.")]
+    #     messages += error_message
+    #     return {
+    #         "generation": code_solution,
+    #         "messages": messages,
+    #         "iterations": iterations,
+    #         "error": "yes",
+    #     }
 
     # No errors
     print("---NO G-CODE TEST FAILURES---")
@@ -125,9 +164,7 @@ def code_check(state: GraphState):
         "error": "no",
     }
 
-
 ### Conditional edges
-
 def decide_to_finish(state: GraphState):
     """
     Determines whether to finish.
@@ -147,7 +184,6 @@ def decide_to_finish(state: GraphState):
     else:
         print("---DECISION: RE-TRY SOLUTION---")
         return "generate"
-    
 
 def _print_event(event: dict, _printed: set, max_length=1500):
     current_state = event.get("dialog_state")
@@ -164,13 +200,12 @@ def _print_event(event: dict, _printed: set, max_length=1500):
             print(msg_repr)
             _printed.add(message.id)
 
-
 def construct_graph(model, user_inputs):
     builder = StateGraph(GraphState)
 
     # Define the nodes
     builder.add_node("generate", lambda state: generate(state, model, user_inputs))  # generation solution
-    builder.add_node("check_code", code_check)  # check code
+    builder.add_node("check_code", lambda state: code_check(state, model, user_inputs))  # check code
 
     # Build graph
     builder.set_entry_point("generate")

@@ -45,6 +45,14 @@ source ~/.bashrc
 
 To use `OpenAI` models, add the access token <code>openai_token = "YourOpenAITokenHere" </code> to `.streamlit/secrets.toml`.
 
+
+## Usage
+
+To run the GLLM application:
+```shell
+poetry run streamlit run gllm/code_generator_streamlit_reasoning_langchain_langgraph.py
+```
+
 ## Project Scripts
 
 ### Chatbot

@@ -32,6 +32,8 @@ pygcode = "^0.2.1"
 langchain = "^0.2.1"
 langgraph = "^0.0.62"
 langchain-community = "^0.2.1"
+smart-open = {extras = ["s3"], version = "^7.0.4"}
+shapely = "^2.0.4"
 
 
 [[tool.poetry.source]]
