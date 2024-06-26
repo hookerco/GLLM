@@ -53,6 +53,14 @@ To run the GLLM application:
 poetry run streamlit run gllm/code_generator_streamlit_reasoning_langchain_langgraph.py
 ```
 
+## TODOs
+
+* [ ] plot user specification considering
+  - [x] linear cutting path (milling)
+  - [ ] circular cutting path (milling)
+  - [ ] drilling 
+* [ ] compare path extracted from the generated G-code with the user-defined specifications (semantic testing) 
+
 ## Project Scripts
 
 ### Chatbot

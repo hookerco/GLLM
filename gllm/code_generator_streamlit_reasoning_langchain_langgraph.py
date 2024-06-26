@@ -1,10 +1,10 @@
 import uuid
 import streamlit as st
-from utils.rag_utils import setup_langchain_with_rag
-from utils.model_utils import setup_model, setup_langchain_without_rag
-from utils.params_extraction_utils import extract_parameters_logic, display_extracted_parameters
-from utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode, validate_gcode, clean_gcode
-from utils.graph_utils import construct_graph, _print_event
+from gllm.utils.rag_utils import setup_langchain_with_rag
+from gllm.utils.model_utils import setup_model, setup_langchain_without_rag
+from gllm.utils.params_extraction_utils import extract_parameters_logic, display_extracted_parameters, parse_extracted_parameters, validate_parameters_extraction
+from gllm.utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode, validate_gcode, clean_gcode
+from gllm.utils.graph_utils import construct_graph, _print_event
 
 
 def main():
@@ -38,15 +38,17 @@ def main():
         st.session_state['missing_parameters'] = None
         st.session_state['user_inputs'] = {}
         st.session_state['gcode'] = None
+        st.session_state['user_confirmation'] = None
 
     if st.button("Extract Parameters") and "langchain_chain" in st.session_state:
         extract_parameters_logic(st.session_state['langchain_chain'], task_description)
-
+        
     display_extracted_parameters()
 
-    if st.button("Generate G-code") and "langchain_chain" in st.session_state:
-        #generate_gcode_logic(st.session_state['langchain_chain'])
+    validate_parameters_extraction()
 
+    if st.button("Generate G-code") and "langchain_chain" in st.session_state:
+        # construct graph
         graph = construct_graph(st.session_state['langchain_chain'], st.session_state['user_inputs'])
         events = graph.stream({"messages": [("user", task_description)], "iterations": 0}, config, stream_mode="values")
         for event in events:
@@ -55,8 +57,6 @@ def main():
         #cleaned_gcode = clean_gcode(event['generation'])
         st.session_state['gcode'] = event['generation']
 
-        # while not validate_gcode(st.session_state['gcode']):
-        #     generate_gcode_logic(st.session_state['langchain_chain'])
     
     display_generated_gcode()
 

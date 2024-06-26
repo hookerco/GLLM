@@ -36,19 +36,15 @@ SYSTEM_MESSAGE = """You are a G-code generator for a CNC machine. Your task is t
 """
 
 REQUIRED_PARAMETERS = [
-    "Type of CNC Machine",
     "Material",
-    "Tool Type",
-    "Tool Diameter",
     "Operation Type",
     "Desired Shape",
     "Return Tool to Home After Execution",
-    "Shape Dimensions",
-    "Cutting Tool Coordinates",
+    "Workpiece Dimensions",
+    "Cutting Tool Path",
     "Starting Point",
     "Home Position",
     "Workpiece Dimensions",
-    "Coordinates",
     "Depth of Cut",
     "Feed Rate",
     "Spindle Speed"

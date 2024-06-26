@@ -123,3 +123,45 @@ def plot_gcode(gcode):
     plt.grid(True)
     plt.axis('equal')
     return plt
+
+
+def plot_user_specification(parsed_parameters):
+    """Plots the CNC task in 2D."""
+
+    wp_dims = parsed_parameters['workpiece_diemensions']
+    start_point = parsed_parameters['starting_point']
+    tool_path = parsed_parameters['tool_path']
+    cut_depth = parsed_parameters['cut_depth'][0]
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+
+    # Plot workpiece as a rectangle
+    rect = plt.Rectangle((0, 0), wp_dims[0], wp_dims[1], 
+                         linewidth=2, edgecolor='k', facecolor='lightgray')
+    ax.add_patch(rect)
+
+    # Plot tool path
+    x_path, y_path, _ = zip(*tool_path)  # Ignore z-coordinates for 2D plot
+
+    # Move to starting point if not already at the beginning
+    if tool_path and (start_point[0], start_point[1]) != tool_path[0]:
+        x_path = (start_point[0],) + x_path
+        y_path = (start_point[1],) + y_path
+
+    ax.plot(x_path, y_path, 'r-', linewidth=2, label='Tool Path')
+
+    ax.set_xlabel('X (mm)')
+    ax.set_ylabel('Y (mm)')
+    ax.set_title('CNC Task Visualization (2D)')
+    ax.legend()
+
+    # Set axis limits to match workpiece dimensions
+    ax.set_xlim([0, wp_dims[0]])
+    ax.set_ylim([0, wp_dims[1]])
+
+    # Add cut depth as text annotation
+    ax.text(0.05, 0.95, f'Cut Depth: {cut_depth}mm', 
+            transform=ax.transAxes, verticalalignment='top')
+
+    plt.gca().set_aspect('equal', adjustable='box')  # Equal aspect ratio
+    return plt
