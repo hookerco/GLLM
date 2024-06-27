@@ -2,9 +2,11 @@ import uuid
 import streamlit as st
 from gllm.utils.rag_utils import setup_langchain_with_rag
 from gllm.utils.model_utils import setup_model, setup_langchain_without_rag
-from gllm.utils.params_extraction_utils import extract_parameters_logic, display_extracted_parameters, parse_extracted_parameters, validate_parameters_extraction
+from gllm.utils.params_extraction_utils import extract_parameters_logic, display_extracted_parameters, parse_extracted_parameters
 from gllm.utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode, validate_gcode, clean_gcode
 from gllm.utils.graph_utils import construct_graph, _print_event
+from gllm.utils.plot_utils import plot_user_specification
+import plotly.express as px  # Import Plotly Express
 
 
 def main():
@@ -43,9 +45,13 @@ def main():
     if st.button("Extract Parameters") and "langchain_chain" in st.session_state:
         extract_parameters_logic(st.session_state['langchain_chain'], task_description)
         
-    display_extracted_parameters()
+        display_extracted_parameters()
 
-    validate_parameters_extraction()
+    if st.button("Simulate the tool path (2D)"):
+        if st.session_state['extracted_parameters']:
+            parsed_parameters = parse_extracted_parameters(st.session_state['extracted_parameters'])
+            st.text("If the plotted path is incorrect, please adjust the task description.")
+            st.pyplot(plot_user_specification(parsed_parameters=parsed_parameters)) 
 
     if st.button("Generate G-code") and "langchain_chain" in st.session_state:
         # construct graph

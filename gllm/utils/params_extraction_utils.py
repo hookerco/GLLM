@@ -1,7 +1,7 @@
 import re
 import streamlit as st
 from gllm.utils.prompts_utils import REQUIRED_PARAMETERS
-from gllm.utils.plot_utils import plot_user_specification
+
 
 
 def extract_parameters_logic(chain, task_description):
@@ -123,22 +123,3 @@ def parse_extracted_parameters(parameter_string):
     parsed_parameters['cut_depth'] = extract_numerical_values(parameters=parameters, key='Depth of Cut') 
 
     return parsed_parameters
-
-
-def validate_parameters_extraction():
-
-    if st.button("Simulate the tool path (2D)"):
-        parsed_parameters = parse_extracted_parameters(st.session_state['extracted_parameters'])
-        st.pyplot(plot_user_specification(parsed_parameters=parsed_parameters))
-
-        # Ask the user for confirmation
-    if st.session_state['user_confirmation'] is None:
-        st.session_state['user_confirmation'] = st.radio(
-            "Does the plotted path accurately represent the desired shape?",
-            ["Yes", "No"], index=None)
-
-    else:
-        if st.session_state['user_confirmation'] == "No":
-            st.warning("Please adjust the task description to correct the path.")
-        elif st.session_state['user_confirmation'] == "Yes":
-            st.success("Great! Let's proceed.")

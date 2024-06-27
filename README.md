@@ -61,6 +61,8 @@ poetry run streamlit run gllm/code_generator_streamlit_reasoning_langchain_langg
   - [ ] drilling 
 * [ ] compare path extracted from the generated G-code with the user-defined specifications (semantic testing) 
 
+* Parameters extraction: cutting tool path is empty but not included in missing parameters
+
 ## Project Scripts
 
 ### Chatbot

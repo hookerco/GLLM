@@ -4,8 +4,8 @@ import pygcode
 import tempfile
 import subprocess
 import streamlit as st
-from utils.plot_utils import plot_gcode, parse_coordinates
-from utils.prompts_utils import REQUIRED_PARAMETERS
+from gllm.utils.plot_utils import plot_gcode, parse_coordinates
+from gllm.utils.prompts_utils import REQUIRED_PARAMETERS
 from langchain_core.messages.ai import AIMessage
 
 
@@ -108,56 +108,20 @@ def validate_safety(gcode_string):
 def validate_continuity(gcode_string):
     """Checking for continuity in tool paths"""
     lines = gcode_string.strip().split('\n')
-    last_position = {'X': 0, 'Y': 0, 'Z': 0}  # Initial tool position (assuming starting at origin)
-
+    last_position = None 
 
     for line_text in lines:
         line = pygcode.Line(line_text)
-
-        # Extract the G-code command
-        commands = line.block.gcodes
-
-        # Extract the X, Y, and Z values, if they exist
-        x = line.block.get_param('X')
-        y = line.block.get_param('Y')
-        z = line.block.get_param('Z')
-
-        # Only update the last_position with the values that are present in the command
-        current_position = {
-            'X': x if x is not None else last_position['X'],
-            'Y': y if y is not None else last_position['Y'],
-            'Z': z if z is not None else last_position['Z']
-        }
-
-        # If there is a move command (G0 or G1) and the position changes, update last_position
-        print(commands)
-        if commands and any(cmd.word in ('G0 ', 'G1 ', 'G00', 'G01') for cmd in commands):
+        # Ensure the line has G-code commands and check for X, Y parameters
+        if line.block.gcodes and 'X' in line.block.gcodes[0].params and 'Y' in line.block.gcodes[0].params:
+            current_position = (line.block.gcodes[0].params['X'], line.block.gcodes[0].params['Y'])
+            if last_position and (current_position != last_position):
+                error_msg = f"Discontinuity detected at {line_text}"
+                print(error_msg)
+                return False, error_msg
             last_position = current_position
-            print(last_position, current_position)
-        else:
-            # If the command is not a move command, we only log the processing information
-            print(f"Processed: {line_text}")
-            continue
-        
-        # Check for discontinuity
-        if (current_position['X'], current_position['Y'], current_position['Z']) != (last_position['X'], last_position['Y'], last_position['Z']):
-            error_msg = f"Discontinuity detected at {line_text}"
-            print(error_msg)
-            return False, error_msg
-        
-        print(f"!!Processed: {line_text}")
-
+        print(f"Processed: {line_text}")
     return True, None
-    #     # Ensure the line has G-code commands and check for X, Y parameters
-    #     if line.block.gcodes and 'X' in line.block.gcodes[0].params and 'Y' in line.block.gcodes[0].params:
-    #         current_position = (line.block.gcodes[0].params['X'], line.block.gcodes[0].params['Y'])
-    #         if last_position and (current_position != last_position):
-    #             error_msg = f"Discontinuity detected at {line_text}"
-    #             print(error_msg)
-    #             return False, error_msg
-    #         last_position = current_position
-    #     print(f"Processed: {line_text}")
-    # return True, None
 
 def validate_feed_rate(gcode_string, min_feed, max_feed):
     """Ensure that the feed rate specified in G-code commands is within the acceptable limits for the material and tool being used. 

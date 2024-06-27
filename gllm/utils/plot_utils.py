@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import re
+import plotly.graph_objects as go
+
+
 
 def parse_coordinates(command):
     # Regular expression to find coordinates
@@ -165,3 +168,76 @@ def plot_user_specification(parsed_parameters):
 
     plt.gca().set_aspect('equal', adjustable='box')  # Equal aspect ratio
     return plt
+
+
+# def plot_user_specification(parsed_parameters):
+#     """Plots the CNC task in 2D using Plotly."""
+
+#     wp_dims = parsed_parameters['workpiece_diemensions']
+#     start_point = parsed_parameters['starting_point']
+#     tool_path = parsed_parameters['tool_path']
+#     cut_depth = parsed_parameters['cut_depth'][0]
+
+#     # Create Plotly figure
+#     fig = go.Figure()
+
+#     # Plot workpiece as a rectangle
+#     fig.add_shape(
+#         type="rect",
+#         x0=0,
+#         y0=0,
+#         x1=wp_dims[0],
+#         y1=wp_dims[1],
+#         line=dict(color="black", width=2),
+#         fillcolor="lightgray",
+#     )
+
+#     # Plot tool path
+#     x_path, y_path, _ = zip(*tool_path)  # Ignore z-coordinates for 2D plot
+
+#     # Move to starting point if not already at the beginning
+#     if tool_path and (start_point[0], start_point[1]) != tool_path[0]:
+#         x_path = [start_point[0]] + list(x_path)
+#         y_path = [start_point[1]] + list(y_path)
+
+#     print(tool_path)
+
+#     fig.add_trace(
+#         go.Scatter(
+#             x=list(x_path), 
+#             y=list(y_path), 
+#             mode="lines", 
+#             line=dict(color="red", width=2),
+#             name="Tool Path"
+#         )
+#     )
+
+#     # Set axis labels and title
+#     fig.update_layout(
+#         xaxis_title="X (mm)",
+#         yaxis_title="Y (mm)",
+#         title="CNC Task Visualization (2D)",
+#         showlegend=True,  # Show legend
+#         xaxis=dict(range=[0, wp_dims[0]]),  # Set x-axis limits
+#         yaxis=dict(range=[0, wp_dims[1]]),  # Set y-axis limits
+#         annotations=[
+#             dict(
+#                 x=0.05,
+#                 y=0.95,
+#                 xref="paper",  # Relative to figure (0 to 1)
+#                 yref="paper",
+#                 text=f"Cut Depth: {cut_depth}mm",
+#                 showarrow=False,
+#                 align="left",
+#                 valign="top"
+#             )
+#         ]
+#     )
+
+#     # Equal aspect ratio
+#     fig.update_yaxes(
+#         scaleanchor="x",
+#         scaleratio=1,
+#     )
+
+#     return fig
