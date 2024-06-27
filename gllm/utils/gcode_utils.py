@@ -3,10 +3,12 @@ import os
 import pygcode
 import tempfile
 import subprocess
+import itertools
 import streamlit as st
-from gllm.utils.plot_utils import plot_gcode, parse_coordinates
+from gllm.utils.plot_utils import plot_gcode, parse_coordinates, parse_gcode
 from gllm.utils.prompts_utils import REQUIRED_PARAMETERS
 from langchain_core.messages.ai import AIMessage
+from gllm.utils.params_extraction_utils import parse_extracted_parameters
 
 
 
@@ -178,6 +180,60 @@ def validate_z_levels(gcode_string, max_depth):
                 return False, error_msg
     return True, None
 
+
+def validate_functional_correctness(gcode_string, parameters_string):
+    """
+    
+    """
+    x_points, y_points = parse_gcode(gcode_string)
+
+    gcode_tool_path = [(x,y) for x, y in zip(x_points, y_points)]
+
+    user_defined_parameters = parse_extracted_parameters(parameter_string=parameters_string)
+
+    if user_defined_parameters is not None:
+         
+        user_defined_start_point = user_defined_parameters['starting_point']
+        tool_path = user_defined_parameters['tool_path']
+
+        # Plot tool path
+        x_path, y_path, _ = zip(*tool_path)  # Ignore z-coordinates for 2D plot
+
+        # Move to starting point if not already at the beginning
+        if tool_path and (user_defined_start_point[0], user_defined_start_point[1]) != tool_path[0]:
+            x_path = (user_defined_start_point[0],) + x_path
+            y_path = (user_defined_start_point[1],) + y_path
+
+        user_defined_tool_path = [(x,y) for x, y in zip(x_path, y_path)]
+
+        # Remove consecutive duplicates from both paths
+        gcode_tool_path = [k for k, _ in itertools.groupby(gcode_tool_path)]
+        user_defined_tool_path = [k for k, _ in itertools.groupby(user_defined_tool_path)]
+
+        # Calculate the Hausdorff distance between the two paths
+        def hausdorff_distance(path1, path2):
+            def point_distance(p1, p2):
+                return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)**0.5
+
+            def directed_hausdorff(path_a, path_b):
+                return max(min(point_distance(a, b) for b in path_b) for a in path_a)
+
+            return max(directed_hausdorff(path1, path2), directed_hausdorff(path2, path1))
+
+        distance = hausdorff_distance(gcode_tool_path, user_defined_tool_path)
+
+        # Define a tolerance for the Hausdorff distance
+        tolerance = 0.1 
+
+        if distance <= tolerance:
+            print(f"INFO: Tool paths match within tolerance. Hausdorff distance: {distance:.4f}")
+            return True, None
+        else:
+            print(f"INFO: Tool paths do not match. Hausdorff distance: {distance:.4f}")
+            error_msg = f"The tool path extracted from the generated G-code ({gcode_tool_path}) does not reflect the specification defined by the user {user_defined_tool_path}."
+            return False, error_msg
+
+    return True, None
 
 # def check_safe_return(gcode_string, safe_position={'X': -1, 'Y': 0, 'Z': 10}):
 #     """

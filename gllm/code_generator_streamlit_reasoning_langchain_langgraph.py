@@ -40,22 +40,24 @@ def main():
         st.session_state['missing_parameters'] = None
         st.session_state['user_inputs'] = {}
         st.session_state['gcode'] = None
-        st.session_state['user_confirmation'] = None
+        
+    if "parsed_parameters" not in st.session_state:
+        st.session_state.parsed_parameters = {} 
+    
 
     if st.button("Extract Parameters") and "langchain_chain" in st.session_state:
         extract_parameters_logic(st.session_state['langchain_chain'], task_description)
-        
         display_extracted_parameters()
 
     if st.button("Simulate the tool path (2D)"):
         if st.session_state['extracted_parameters']:
-            parsed_parameters = parse_extracted_parameters(st.session_state['extracted_parameters'])
+            st.session_state['parsed_parameters'] = parse_extracted_parameters(st.session_state['extracted_parameters'])
             st.text("If the plotted path is incorrect, please adjust the task description.")
-            st.pyplot(plot_user_specification(parsed_parameters=parsed_parameters)) 
+            st.pyplot(plot_user_specification(parsed_parameters=st.session_state.parsed_parameters)) 
 
-    if st.button("Generate G-code") and "langchain_chain" in st.session_state:
+    if st.button("Generate G-code") and "langchain_chain" in st.session_state and 'parsed_parameters' in st.session_state:
         # construct graph
-        graph = construct_graph(st.session_state['langchain_chain'], st.session_state['user_inputs'])
+        graph = construct_graph(st.session_state['langchain_chain'], st.session_state['user_inputs'], st.session_state['extracted_parameters'])
         events = graph.stream({"messages": [("user", task_description)], "iterations": 0}, config, stream_mode="values")
         for event in events:
             _print_event(event, _printed)
@@ -67,6 +69,10 @@ def main():
     display_generated_gcode()
 
     plot_generated_gcode()
+
+     # Debug information
+    if st.checkbox("Show Debug Info"):
+        st.write("Session State:", st.session_state)
 
 if __name__ == "__main__":
     main()

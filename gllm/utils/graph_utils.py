@@ -4,8 +4,9 @@ from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 
-from utils.gcode_utils import generate_gcode_with_langchain, validate_syntax, validate_continuity, \
-                              clean_gcode, validate_unreachable_code, validate_safety, validate_drilling_gcode
+from gllm.utils.gcode_utils import generate_gcode_with_langchain, validate_syntax, validate_continuity, \
+                              clean_gcode, validate_unreachable_code, validate_safety, validate_drilling_gcode, \
+                              validate_functional_correctness
 
 ### Parameters
 max_iterations = 50
@@ -58,7 +59,7 @@ def generate(state: GraphState, chain, user_inputs):
     iterations = iterations + 1
     return {"generation": gcode_response, "messages": messages, "iterations": iterations}
 
-def code_check(state: GraphState, chain, user_inputs):
+def code_check(state: GraphState, chain, user_inputs, parameters_string):
     """
     Check code
 
@@ -88,12 +89,12 @@ def code_check(state: GraphState, chain, user_inputs):
             "iterations": iterations,
             "error": "yes",
         }
-
-    # Check continuty
-    is_continuous, continuity_error_msg = validate_continuity(code_solution)
-    if not is_continuous and 'milling' in user_inputs['Operation Type']:
-        print("---CONTINUITY CHECK: FAILED---")
-        error_message = [("user", f"Your solution failed the code execution test: {continuity_error_msg}) Reflect on this error and your prior attempt to solve the problem. (1) State what you think went wrong with the prior solution and (2) try to solve this problem again. Return the FULL SOLUTION.")]
+    
+    # Check functional (semantic correctness)
+    is_semantically_correct, semantic_error_msg = validate_functional_correctness(code_solution, parameters_string)
+    if not is_semantically_correct and 'milling' in user_inputs['Operation Type']:
+        print("---SEMANTIC CORRECTNESS CHECK: FAILED---")
+        error_message = [("user", f"Your solution failed the code execution test: {semantic_error_msg}) Reflect on this error and your prior attempt to solve the problem. (1) State what you think went wrong with the prior solution and (2) try to solve this problem again. Return the FULL SOLUTION.")]
         messages += error_message
         return {
             "generation": code_solution,
@@ -101,6 +102,19 @@ def code_check(state: GraphState, chain, user_inputs):
             "iterations": iterations,
             "error": "yes",
         }
+
+    # Check continuty
+    # is_continuous, continuity_error_msg = validate_continuity(code_solution)
+    # if not is_continuous and 'milling' in user_inputs['Operation Type']:
+    #     print("---CONTINUITY CHECK: FAILED---")
+    #     error_message = [("user", f"Your solution failed the code execution test: {continuity_error_msg}) Reflect on this error and your prior attempt to solve the problem. (1) State what you think went wrong with the prior solution and (2) try to solve this problem again. Return the FULL SOLUTION.")]
+    #     messages += error_message
+    #     return {
+    #         "generation": code_solution,
+    #         "messages": messages,
+    #         "iterations": iterations,
+    #         "error": "yes",
+    #     }
 
     # Check unreachable code
     is_unreachable_code, unreachable_error_msg = validate_unreachable_code(code_solution)
@@ -200,12 +214,12 @@ def _print_event(event: dict, _printed: set, max_length=1500):
             print(msg_repr)
             _printed.add(message.id)
 
-def construct_graph(model, user_inputs):
+def construct_graph(model, user_inputs, parameters_string):
     builder = StateGraph(GraphState)
 
     # Define the nodes
     builder.add_node("generate", lambda state: generate(state, model, user_inputs))  # generation solution
-    builder.add_node("check_code", lambda state: code_check(state, model, user_inputs))  # check code
+    builder.add_node("check_code", lambda state: code_check(state, model, user_inputs, parameters_string))  # check code
 
     # Build graph
     builder.set_entry_point("generate")
