@@ -59,9 +59,11 @@ poetry run streamlit run gllm/code_generator_streamlit_reasoning_langchain_langg
   - [x] linear cutting path (milling)
   - [ ] circular cutting path (milling)
   - [ ] drilling 
-* [ ] compare path extracted from the generated G-code with the user-defined specifications (semantic testing) 
+* [x] compare path extracted from the generated G-code with the user-defined specifications (semantic testing) 
 
-* Parameters extraction: cutting tool path is empty but not included in missing parameters
+* [x] Parameters extraction: cutting tool path is empty but not included in missing parameters
+* in some runs, the LLM runs for multiple iterations without being able to minimize the Hausdorff distance (NEED SOLUTION)
+* G-Code Postprocessing is required to correct Z, F, S 
 
 ## Project Scripts
 

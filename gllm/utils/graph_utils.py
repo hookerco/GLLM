@@ -45,7 +45,7 @@ def generate(state: GraphState, chain, user_inputs):
     messages = state["messages"]
     iterations = state["iterations"]
     error = state["error"]
-
+    
     # Solution
     gcode_response = generate_gcode_with_langchain(chain, user_inputs)
     messages += [
@@ -194,6 +194,7 @@ def decide_to_finish(state: GraphState):
 
     if error == "no" or iterations == max_iterations:
         print("---DECISION: FINISH---")
+        print("# ITERATIONS: ", iterations)
         return "end"
     else:
         print("---DECISION: RE-TRY SOLUTION---")

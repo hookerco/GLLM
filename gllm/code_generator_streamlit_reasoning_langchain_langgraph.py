@@ -3,7 +3,7 @@ import streamlit as st
 from gllm.utils.rag_utils import setup_langchain_with_rag
 from gllm.utils.model_utils import setup_model, setup_langchain_without_rag
 from gllm.utils.params_extraction_utils import extract_parameters_logic, display_extracted_parameters, parse_extracted_parameters
-from gllm.utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode, validate_gcode, clean_gcode
+from gllm.utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode, validate_gcode, clean_gcode, generate_gcode_unstructured_prompt
 from gllm.utils.graph_utils import construct_graph, _print_event
 from gllm.utils.plot_utils import plot_user_specification
 import plotly.express as px  # Import Plotly Express
@@ -26,6 +26,9 @@ def main():
     # Drop-down menu for model selection
     model_str = st.selectbox('Choose a Language Model:', ('Zephyr-7b', 'GPT-3.5', 'Fine-tuned StarCoder'), index=1)
     model = setup_model(model=model_str)
+
+    # Let the user choose whether to use structured or unstructured prompt
+    prompt_type = st.selectbox('Prompt Type:', ('Structured', 'Unstructured'), index=0)
     
     pdf_files = st.file_uploader("Upload PDF files with additional knowledge (RAG)", accept_multiple_files=True, type=['pdf'])
 
@@ -44,26 +47,33 @@ def main():
     if "parsed_parameters" not in st.session_state:
         st.session_state.parsed_parameters = {} 
     
-
-    if st.button("Extract Parameters") and "langchain_chain" in st.session_state:
+    disable_extract_button = False if prompt_type == 'Structured' else True
+    extract_button = st.button("Extract Parameters", disabled=disable_extract_button)    # Disable Parameter Extraction if user selects unstructured prompt 
+    if extract_button and "langchain_chain" in st.session_state:
         extract_parameters_logic(st.session_state['langchain_chain'], task_description)
+        
+    if st.session_state['extracted_parameters']:
         display_extracted_parameters()
 
-    if st.button("Simulate the tool path (2D)"):
+    if st.button("Simulate the tool path (2D)", disabled=disable_extract_button):
         if st.session_state['extracted_parameters']:
             st.session_state['parsed_parameters'] = parse_extracted_parameters(st.session_state['extracted_parameters'])
             st.text("If the plotted path is incorrect, please adjust the task description.")
             st.pyplot(plot_user_specification(parsed_parameters=st.session_state.parsed_parameters)) 
 
-    if st.button("Generate G-code") and "langchain_chain" in st.session_state and 'parsed_parameters' in st.session_state:
-        # construct graph
-        graph = construct_graph(st.session_state['langchain_chain'], st.session_state['user_inputs'], st.session_state['extracted_parameters'])
-        events = graph.stream({"messages": [("user", task_description)], "iterations": 0}, config, stream_mode="values")
-        for event in events:
-            _print_event(event, _printed)
+    if st.button("Generate G-code"):
+        if disable_extract_button:
+            st.session_state['gcode'] = generate_gcode_unstructured_prompt(st.session_state['langchain_chain'], task_description)
+        else: 
+            if "langchain_chain" in st.session_state and 'parsed_parameters' in st.session_state:
+                # construct graph
+                graph = construct_graph(st.session_state['langchain_chain'], st.session_state['user_inputs'], st.session_state['extracted_parameters'])
+                events = graph.stream({"messages": [("user", task_description)], "iterations": 0}, config, stream_mode="values")
+                for event in events:
+                    _print_event(event, _printed)
 
-        #cleaned_gcode = clean_gcode(event['generation'])
-        st.session_state['gcode'] = event['generation']
+                #cleaned_gcode = clean_gcode(event['generation'])
+                st.session_state['gcode'] = event['generation']
 
     
     display_generated_gcode()

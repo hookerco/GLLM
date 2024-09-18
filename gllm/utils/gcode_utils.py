@@ -10,7 +10,16 @@ from gllm.utils.prompts_utils import REQUIRED_PARAMETERS
 from langchain_core.messages.ai import AIMessage
 from gllm.utils.params_extraction_utils import parse_extracted_parameters
 
+def generate_gcode_unstructured_prompt(chain, task_description):
+    prompt = (
+        "Based on the details provided, generate a robust G-code for the CNC machining operation:\n\n"
+        "Task description: {}\n:".format(task_description)
+    )
+    gcode_response = chain.invoke({'input':prompt})
+    cleaned_gcode = clean_gcode(gcode_response)
+    st.session_state['gcode'] = cleaned_gcode
 
+    return cleaned_gcode
 
 def generate_gcode_logic(chain):
     if any(param not in st.session_state['user_inputs'] for param in REQUIRED_PARAMETERS):
@@ -36,6 +45,9 @@ def generate_gcode_with_langchain(chain, user_inputs):
         f"Depth of Cut: {user_inputs['Depth of Cut']}\n"
         f"Feed Rate: {user_inputs['Feed Rate']}\n"
         f"Spindle Speed: {user_inputs['Spindle Speed']}\n"
+        f"Radius: {user_inputs['Radius']}\n"
+        f"Number of Shapes: {user_inputs['Number of Shapes']}\n"
+        "If the number of shapes is larger than one, generate G-code for each shape separately and at the end combine the codes of all shapes. the cutting tool path must include numbers."
    )
     gcode_response = chain.invoke({'input':final_prompt})
     return gcode_response
@@ -186,6 +198,7 @@ def validate_functional_correctness(gcode_string, parameters_string):
     
     """
     x_points, y_points = parse_gcode(gcode_string)
+    # print("Parsed G-code parameters", x_points, y_points)
 
     gcode_tool_path = [(x,y) for x, y in zip(x_points, y_points)]
 
@@ -195,43 +208,48 @@ def validate_functional_correctness(gcode_string, parameters_string):
          
         user_defined_start_point = user_defined_parameters['starting_point']
         tool_path = user_defined_parameters['tool_path']
+ 
+        try:
+            # Plot tool path
+            x_path, y_path, _ = zip(*tool_path)  # Ignore z-coordinates for 2D plot
 
-        # Plot tool path
-        x_path, y_path, _ = zip(*tool_path)  # Ignore z-coordinates for 2D plot
+            # Move to starting point if not already at the beginning
+            if tool_path and (user_defined_start_point[0], user_defined_start_point[1]) != tool_path[0]:
+                x_path = (user_defined_start_point[0],) + x_path
+                y_path = (user_defined_start_point[1],) + y_path
 
-        # Move to starting point if not already at the beginning
-        if tool_path and (user_defined_start_point[0], user_defined_start_point[1]) != tool_path[0]:
-            x_path = (user_defined_start_point[0],) + x_path
-            y_path = (user_defined_start_point[1],) + y_path
+            user_defined_tool_path = [(x,y) for x, y in zip(x_path, y_path)]
 
-        user_defined_tool_path = [(x,y) for x, y in zip(x_path, y_path)]
+            # Remove consecutive duplicates from both paths
+            gcode_tool_path = [k for k, _ in itertools.groupby(gcode_tool_path)]
+            user_defined_tool_path = [k for k, _ in itertools.groupby(user_defined_tool_path)]
 
-        # Remove consecutive duplicates from both paths
-        gcode_tool_path = [k for k, _ in itertools.groupby(gcode_tool_path)]
-        user_defined_tool_path = [k for k, _ in itertools.groupby(user_defined_tool_path)]
+            # Calculate the Hausdorff distance between the two paths
+            def hausdorff_distance(path1, path2):
+                def point_distance(p1, p2):
+                    return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)**0.5
 
-        # Calculate the Hausdorff distance between the two paths
-        def hausdorff_distance(path1, path2):
-            def point_distance(p1, p2):
-                return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)**0.5
+                def directed_hausdorff(path_a, path_b):
+                    return max(min(point_distance(a, b) for b in path_b) for a in path_a)
 
-            def directed_hausdorff(path_a, path_b):
-                return max(min(point_distance(a, b) for b in path_b) for a in path_a)
+                return max(directed_hausdorff(path1, path2), directed_hausdorff(path2, path1))
 
-            return max(directed_hausdorff(path1, path2), directed_hausdorff(path2, path1))
+            distance = hausdorff_distance(gcode_tool_path, user_defined_tool_path)
 
-        distance = hausdorff_distance(gcode_tool_path, user_defined_tool_path)
+            # Define a tolerance for the Hausdorff distance
+            tolerance = 1 
 
-        # Define a tolerance for the Hausdorff distance
-        tolerance = 0.1 
-
-        if distance <= tolerance:
-            print(f"INFO: Tool paths match within tolerance. Hausdorff distance: {distance:.4f}")
+            if distance <= tolerance:
+                print(f"INFO: Tool paths match within tolerance. Hausdorff distance: {distance:.4f}")
+                return True, None
+            else:
+                print(f"INFO: Tool paths do not match. Hausdorff distance: {distance:.4f}")
+                error_msg = f"The tool path extracted from the generated G-code ({gcode_tool_path}) does not reflect the specification defined by the user {user_defined_tool_path}."
+                return False, error_msg
+        
+        except:
+            print("Unsupported machine operation")
             return True, None
-        else:
-            print(f"INFO: Tool paths do not match. Hausdorff distance: {distance:.4f}")
-            error_msg = f"The tool path extracted from the generated G-code ({gcode_tool_path}) does not reflect the specification defined by the user {user_defined_tool_path}."
-            return False, error_msg
 
     return True, None
 

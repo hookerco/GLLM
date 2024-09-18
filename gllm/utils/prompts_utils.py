@@ -44,8 +44,9 @@ REQUIRED_PARAMETERS = [
     "Cutting Tool Path",
     "Starting Point",
     "Home Position",
-    "Workpiece Dimensions",
     "Depth of Cut",
     "Feed Rate",
-    "Spindle Speed"
+    "Spindle Speed",
+    "Radius",
+    "Number of Shapes"
 ]
