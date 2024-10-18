@@ -9,6 +9,55 @@ from gllm.utils.plot_utils import plot_gcode, parse_coordinates, parse_gcode
 from gllm.utils.prompts_utils import REQUIRED_PARAMETERS
 from langchain_core.messages.ai import AIMessage
 from gllm.utils.params_extraction_utils import parse_extracted_parameters
+from transformers import AutoTokenizer
+
+def generate_task_descriptions(chain, model_str, input_description):
+
+    # Load tokenizer and model
+    tokenizer = AutoTokenizer.from_pretrained('bigcode/gpt_bigcode-santacoder')
+
+
+    subtasks_prompt = (
+        "You are tasked with parsing a description that outlines the generation of G-code for multiple shapes. Your goal is to create separate, detailed task descriptions for each individual shape mentioned. For each shape, create a comprehensive task description focusing solely on that shape's G-code generation requirements. Ensure each task description is clear, concise, and self-contained, and includes the following details: Operation Type, Desired Shape, Cutting Tool Path, Starting Point,Depth of Cut, Radius, Number of Shapes. Present your output as three separate strings, each describing a single shape's task. Separate each task description with two newline characters for clarity.\n"
+        "Input description:{}"
+    ).format(input_description)
+
+    if model_str == 'Fine-tuned StarCoder':
+        # Prepare input
+        input_ids = tokenizer.encode(subtasks_prompt, return_tensors="pt")
+
+        # Generate output
+        output = chain.generate(input_ids, max_length=1000)
+        
+        # Decode and print the result
+        response = tokenizer.decode(output[0], skip_special_tokens=True)
+    elif model_str == 'CodeLlama':
+        model_name = "codellama/CodeLlama-7b-hf"
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        # Tokenize input
+        inputs = tokenizer(subtasks_prompt, return_tensors="pt", padding=True, truncation=True)
+        # Generate
+        output = chain.generate(
+            inputs.input_ids,
+            max_length=1000,
+            num_return_sequences=1,
+            do_sample=True,
+            temperature=0.7,
+            pad_token_id=tokenizer.eos_token_id
+        )
+        # Decode output
+        response = tokenizer.decode(output[0], skip_special_tokens=True)
+        #response = chain(subtasks_prompt, max_length=1000, truncation=True, pad_token_id=chain.tokenizer.eos_token_id)[0]['generated_text']
+        
+    else:
+        response = chain.invoke(subtasks_prompt)
+
+    # prepare response according to the model
+    task_descriptions = response.content.strip().split("\n\n") if model_str == 'GPT-3.5' else response.strip().split("\n\n") 
+    
+    return task_descriptions
+
 
 def generate_gcode_unstructured_prompt(chain, task_description):
     prompt = (
@@ -31,6 +80,7 @@ def generate_gcode_logic(chain):
         st.session_state['gcode'] = cleaned_gcode
 
 def generate_gcode_with_langchain(chain, user_inputs):
+    
     final_prompt = (
         "Based on the details provided, generate a robust G-code for the CNC machining operation:\n\n"
         f"Material: {user_inputs['Material']}\n"
@@ -48,7 +98,7 @@ def generate_gcode_with_langchain(chain, user_inputs):
         f"Radius: {user_inputs['Radius']}\n"
         f"Number of Shapes: {user_inputs['Number of Shapes']}\n"
         "If the number of shapes is larger than one, generate G-code for each shape separately and at the end combine the codes of all shapes. the cutting tool path must include numbers."
-   )
+    )
     gcode_response = chain.invoke({'input':final_prompt})
     return gcode_response
 

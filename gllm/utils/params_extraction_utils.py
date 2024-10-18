@@ -23,23 +23,25 @@ def extract_parameters_logic(chain, task_description):
                 extracted_parameters[key.strip()] = value.strip()
         else:
             # capture x and y values of the cutting tool path
-            match = re.search(r'(?:x\s*=\s*([\d.]+)\s*y\s*=\s*([\d.]+))|(?:\(([\d.]+),\s*([\d.]+)\))', line)
+            match = re.search(r'(?:[xX]\s*=\s*([\d.]+)\s*[,;\s]\s*[yY]\s*=\s*([\d.]+))|(?:\(([\d.]+),\s*([\d.]+)\))', line)
+            print("MATCH: ", match)
             if match:
                 x, y = match.groups()[0:2] if match.groups()[0] else match.groups()[2:4]
+                print("X, Y: ", x, y)
                 cutting_tool_path.append((float(x), float(y)))
 
     # Add the cutting tool path to the extracted parameters
     if cutting_tool_path:
         extracted_parameters['Cutting Tool Path'] = cutting_tool_path
     
-    st.session_state['extracted_parameters'] = from_dict_to_text(extracted_parameters)
+    
      
     # find the required parameters which have not been assigned a value
     missing_parameters = [param for param in REQUIRED_PARAMETERS if param not in extracted_parameters]
-    print(missing_parameters)
-    # update the relevant Streamlit states
-    st.session_state['missing_parameters'] = missing_parameters
-    st.session_state['user_inputs'].update(extracted_parameters)
+    
+
+
+    return extracted_parameters, missing_parameters
 
 
 def extract_parameters_with_langchain(chain, task_description):
@@ -154,7 +156,7 @@ def parse_extracted_parameters(parameter_string):
     parsed_parameters['workpiece_diemensions'] = extract_numerical_values(parameters=parameters, key='Workpiece Dimensions') 
     parsed_parameters['starting_point'] = extract_numerical_values(parameters=parameters, key='Starting Point') 
     parsed_parameters['home_position'] = extract_numerical_values(parameters=parameters, key='Home Position') 
-    parsed_parameters['tool_path'] = find_circular_path(parameters=parameters) if parameters["Desired Shape"]=='circle' else extract_path(parameters=parameters, key='Cutting Tool Path')
+    parsed_parameters['tool_path'] = find_circular_path(parameters=parameters) if parameters["Desired Shape"] in ['circle', 'circular pocket', 'circular', 'Circular', 'Circular Pocket', 'Circle'] else extract_path(parameters=parameters, key='Cutting Tool Path')
     parsed_parameters['cut_depth'] = extract_numerical_values(parameters=parameters, key='Depth of Cut') 
 
     return parsed_parameters

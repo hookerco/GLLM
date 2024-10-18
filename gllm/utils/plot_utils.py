@@ -3,7 +3,23 @@ import matplotlib.pyplot as plt
 import re
 import plotly.graph_objects as go
 
+def refine_gcode(gcode):
 
+    commands = gcode.splitlines()
+    corrected_lines = []
+
+    for i, command in enumerate(commands):
+        command = command.split(';')[0].strip()  # Remove comments and trim
+        
+        if not command:
+            continue
+        elif 'M30' in command and i != len(commands) - 1:
+            # skip M30
+            continue
+        
+        corrected_lines.append(command)
+    
+    return "\n".join(corrected_lines)
 
 def parse_coordinates(command):
     # Regular expression to find coordinates
