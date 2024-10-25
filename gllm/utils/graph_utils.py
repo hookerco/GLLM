@@ -1,3 +1,17 @@
+"""
+Description of this file:
+
+This file contains utility functions for managing and constructing state graphs within the Langchain application. 
+It is responsible for handling graph-related operations, such as adding messages to the graph and saving checkpoints using SQLite. 
+These utilities are crucial for maintaining the state and flow of the Langchain pipelines used to generate G-codes for CNC machines. 
+
+The file is implemented in Python and utilizes the Langgraph library for graph operations and message handling.
+
+Authors: Mohamed Abdelaal, Samuel Lokadjaja
+
+This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is published under the Apache License 2.0.
+"""
+
 from typing import Annotated
 from typing import TypedDict
 from langgraph.graph.message import AnyMessage, add_messages

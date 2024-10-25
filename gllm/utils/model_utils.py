@@ -1,3 +1,18 @@
+"""
+Description of this file:
+
+This file contains utility functions for setting up and managing machine learning models in a Langchain application. 
+The models are used to generate G-codes from natural language instructions for CNC machines. 
+Various models including Zephyr-7b, Fine-tuned StarCoder, GPT-3.5, and CodeLlama are supported, with configurations tailored for text generation tasks.
+
+The utilities are implemented in Python and utilize libraries such as Transformers, Langchain, and Hugging Face APIs 
+to ensure seamless integration and execution within the application.
+
+Authors: Mohamed Abdelaal, Samuel Lokadjaja
+
+This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is published under the Apache License 2.0.
+"""
+
 import os
 import toml
 import openai

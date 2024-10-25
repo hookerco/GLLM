@@ -1,3 +1,18 @@
+"""
+Description of this file:
+
+This file contains utility functions for generating, validating, and manipulating G-codes for CNC machines. 
+It leverages various libraries including Langchain and Transformers for language model integration, 
+and provides functionalities such as parsing G-code, displaying it, and ensuring its correctness and safety.
+
+The utilities are implemented in Python and are used in a Streamlit application to assist in the G-code generation process. 
+They ensure that the generated G-code adheres to standard CNC programming conventions and meets the required operational criteria.
+
+Authors: Mohamed Abdelaal, Samuel Lokadjaja
+
+This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is published under the Apache License 2.0.
+"""
+
 import re
 import os
 import pygcode

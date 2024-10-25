@@ -1,3 +1,18 @@
+"""
+Description of this file:
+
+This file contains functions to setup Langchain with a RAG model which uses PDF files as external knowledge source. 
+The functions are used in a Streamlit application to generate G-codes for CNC machines. 
+The application takes a natural language instruction as input and generates a G-code based on the instruction. 
+The G-code is then validated and can be downloaded or visualized as a 3D plot.
+
+The functions are written in Python and use the Langchain library for the LLM pipelines.
+
+Authors: Mohamed Abdelaal, Samuel Lokadjaja
+
+This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is published under the Apache License 2.0.
+"""
+
 import openai
 from langchain import hub
 from PyPDF2 import PdfReader

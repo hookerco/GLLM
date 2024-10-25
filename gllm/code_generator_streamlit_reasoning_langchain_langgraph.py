@@ -1,3 +1,19 @@
+"""
+Description of this file:
+
+This is a Streamlit application that uses LLM pipelines with Langchain and Langgraph to generate G-codes for CNC machines. 
+The application takes a natural language instruction as input and generates a G-code based on the instruction. 
+The G-code is then validated and can be downloaded or visualized as a 3D plot.
+
+The application is written in Python and uses the Streamlit library for the user interface. 
+It also uses the Langchain and Langgraph libraries for the LLM pipelines.
+
+Authors: Mohamed Abdelaal, Samuel Lokadjaja
+
+This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is published under the Apache License 2.0.
+"""
+
+
 import uuid
 import streamlit as st
 from gllm.utils.rag_utils import setup_langchain_with_rag

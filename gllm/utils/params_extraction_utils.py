@@ -1,3 +1,19 @@
+"""
+Description of this file:
+
+This file contains utility functions for extracting parameters from a given natural language instruction (task description) for a CNC machine using LLM pipelines with Langchain and Langgraph. 
+The functions are used in a Streamlit application to generate G-codes for CNC machines. 
+The application takes a natural language instruction as input and generates a G-code based on the instruction. 
+The G-code is then validated and can be downloaded or visualized as a 3D plot.
+
+The utilities are implemented in Python and assist in the setup and management of prompt templates, 
+ensuring they adhere to standard CNC programming conventions while maintaining safety and accuracy.
+
+Authors: Mohamed Abdelaal, Samuel Lokadjaja
+
+This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is published under the Apache License 2.0.
+"""
+
 import re
 import math
 import streamlit as st
