@@ -22,3 +22,5 @@ secrets.toml
 .idea/**/dynamic.xml
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
+
+.idea/
