@@ -30,7 +30,14 @@ poetry install
 ```
 
 To use `Huggingface` models, it is required to save the API access token as an environment variable.
-Open your shell's configuration file in a text editor: 
+
+<ol>
+  <li> Register or login at <a href="https://huggingface.co">Hugging Face</a> and create an API token in your profile settings </li>
+  <li> Add a file called <code>secrets.toml</code> in a folder called <code>.streamlit</code> at the root of the repo, and provide your HuggingFace API token by typing <code>huggingface_token = "..."</code>
+  <li> For `OpenAI` models, add the access token <code>openai_token = "YourOpenAITokenHere" </code> to `.streamlit/secrets.toml`. </li>
+</ol>
+
+or you can open your shell's configuration file in a text editor: 
 ```shell
 vim ~/.bashrc
 ```
@@ -43,9 +50,6 @@ Save and close the file. To apply the changes, source the file or restart your t
 source ~/.bashrc
 ```
 
-To use `OpenAI` models, add the access token <code>openai_token = "YourOpenAITokenHere" </code> to `.streamlit/secrets.toml`.
-
-
 ## Usage
 
 To run the GLLM application:
@@ -53,31 +57,6 @@ To run the GLLM application:
 poetry run streamlit run gllm/code_generator_streamlit_reasoning_langchain_langgraph.py
 ```
 
-## TODOs
-
-* [ ] plot user specification considering
-  - [x] linear cutting path (milling)
-  - [ ] circular cutting path (milling)
-  - [ ] drilling 
-* [x] compare path extracted from the generated G-code with the user-defined specifications (semantic testing) 
-
-* [x] Parameters extraction: cutting tool path is empty but not included in missing parameters
-* in some runs, the LLM runs for multiple iterations without being able to minimize the Hausdorff distance (NEED SOLUTION)
-* G-Code Postprocessing is required to correct Z, F, S 
-
-## Project Scripts
-
-### Chatbot
-```chatbot.py``` contains a simple web application to test different LLMs for human-machine interfaces, built using streamlit.
-
-To run this program, follow these steps:
-<ol>
-  <li> Register or login at <a href="https://huggingface.co">Hugging Face</a> and create an API token in your profile settings </li>
-  <li> Add a file called <code>secrets.toml</code> in the folder called <code>.streamlit</code> at the root of your repo, and provide your Hugging Face API token by typing <code>huggingface_token = "..."</code>
-  <li> Run the application by running <code>streamlit run chatbot.py</code> in the terminal at the root of the repo. </li> 
-</ol>
-
-If you have an OpenAI API key, you can also insert it as in step 3 in the same file, by typing <code>openai_token = "..."</code>
 
 ### Question Generation
 This file contains code that takes in text and generates question-answer pairs which could be used for LLM evaluation or instruction tuning.
