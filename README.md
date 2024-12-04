@@ -7,7 +7,7 @@ This repository contains scripts for generating and validating G-codes automatic
 ### Clone with submodules
 
 ```shell
-git clone https://git.sagresearch.de/slok/llm_for_hmi.git --recurse-submodules
+git clone https://github.com/mohamedyd/GLLM.git
 ```
 
 ### Install requirements
