@@ -24,3 +24,6 @@ secrets.toml
 .idea/**/dbnavigator.xml
 
 .idea/
+
+**.pyc
+.venv/

@@ -35,6 +35,7 @@ langchain-community = "^0.2.1"
 smart-open = {extras = ["s3"], version = "^7.0.4"}
 shapely = "^2.0.4"
 plotly = "^5.22.0"
+setuptools = "^80.9.0"
 
 
 [[tool.poetry.source]]
