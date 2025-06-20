@@ -30,6 +30,8 @@ secrets_file_path = os.path.abspath(os.path.join(os.path.dirname('__file__'), '.
 secrets = toml.load(secrets_file_path)
 # Set your OpenAI API key
 openai.api_key = secrets["openai_token"]
+# Optionally set your OpenRouter API key
+openrouter_api_key = secrets.get("openrouter_token")
 
 
 def setup_model(model: str):
@@ -61,6 +63,18 @@ def setup_model(model: str):
         llm = HuggingFacePipeline(pipeline=hf_pipeline)
     elif model == "GPT-3.5":
         llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.7, api_key=openai.api_key)
+    elif model == "OpenRouter":
+        openrouter_model = secrets.get("openrouter_model", "openai/gpt-3.5-turbo")
+        llm = ChatOpenAI(
+            model=openrouter_model,
+            temperature=0.7,
+            base_url="https://openrouter.ai/api/v1",
+            api_key=openrouter_api_key,
+            default_headers={
+                "HTTP-Referer": "https://github.com/mohamedyd/GLLM",
+                "X-Title": "GLLM",
+            },
+        )
     elif model == 'CodeLlama':
         # Wrap the model inside a transformers pipeline to ensure text input works with LangChain.
         model_name = "codellama/CodeLlama-7b-hf"

@@ -37,7 +37,7 @@ def main():
     parser = argparse.ArgumentParser(description="G-code Generator CLI")
     parser.add_argument(
         "--model",
-        choices=["Zephyr-7b", "GPT-3.5", "Fine-tuned StarCoder", "CodeLlama"],
+        choices=["Zephyr-7b", "GPT-3.5", "Fine-tuned StarCoder", "CodeLlama", "OpenRouter"],
         default="GPT-3.5",
         help="Language model to use",
     )

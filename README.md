@@ -35,6 +35,7 @@ To use `Huggingface` models, it is required to save the API access token as an e
   <li> Register or login at <a href="https://huggingface.co">Hugging Face</a> and create an API token in your profile settings </li>
   <li> Add a file called <code>secrets.toml</code> in a folder called <code>.streamlit</code> at the root of the repo, and provide your HuggingFace API token by typing <code>huggingface_token = "..."</code>
   <li> For `OpenAI` models, add the access token <code>openai_token = "YourOpenAITokenHere" </code> to `.streamlit/secrets.toml`. </li>
+  <li> To use models via <a href="https://openrouter.ai">OpenRouter</a>, add <code>openrouter_token = "YourOpenRouterTokenHere"</code> to the same file. Optionally specify <code>openrouter_model = "provider/model-name"</code> to choose a model.</li>
 </ol>
 
 or you can open your shell's configuration file in a text editor: 
@@ -44,6 +45,7 @@ vim ~/.bashrc
 Add the following line to the end of the file:
 ```shell
 export HUGGINGFACEHUB_API_TOKEN="YourHFTokenHere"
+export OPENROUTER_API_KEY="YourOpenRouterTokenHere" # optional
 ```
 Save and close the file. To apply the changes, source the file or restart your terminal:
 ```shell
