@@ -51,8 +51,21 @@ def main():
     
 
     # Drop-down menu for model selection
-    model_str = st.selectbox('Choose a Language Model:', ('Zephyr-7b', 'GPT-3.5', 'Fine-tuned StarCoder', 'CodeLlama'), index=1)
-    model = setup_model(model=model_str)
+    model_str = st.selectbox(
+        'Choose a Language Model:',
+        ('Zephyr-7b', 'GPT-3.5', 'Fine-tuned StarCoder', 'CodeLlama'),
+        index=1,
+    )
+
+    # Store selected model in the session state and rebuild the chain if needed
+    if "selected_model" not in st.session_state:
+        st.session_state["selected_model"] = model_str
+    elif st.session_state["selected_model"] != model_str:
+        st.session_state["selected_model"] = model_str
+        if "langchain_chain" in st.session_state:
+            del st.session_state["langchain_chain"]
+
+    model = setup_model(model=st.session_state["selected_model"])
 
     # Let the user choose whether to use structured or unstructured prompt
     prompt_type = st.selectbox('Prompt Type:', ('Structured', 'Unstructured'), index=0)
