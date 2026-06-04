@@ -53,8 +53,8 @@ def main():
     # Drop-down menu for model selection
     model_str = st.selectbox(
         'Choose a Language Model:',
-        ('Zephyr-7b', 'GPT-3.5', 'Fine-tuned StarCoder', 'CodeLlama', 'OpenRouter'),
-        index=1,
+        ('Codex OAuth', 'Zephyr-7b', 'GPT-3.5', 'Fine-tuned StarCoder', 'CodeLlama', 'OpenRouter'),
+        index=0,
     )
 
     # Store selected model in the session state and rebuild the chain if needed

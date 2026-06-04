@@ -13,13 +13,13 @@ Authors: Mohamed Abdelaal, Samuel Lokadjaja
 This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is published under the Apache License 2.0.
 """
 
-import openai
 from langchain import hub
 from PyPDF2 import PdfReader
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
+from gllm.utils.auth_utils import resolve_openai_api_key
 
 
 def load_pdfs(pdf_files):
@@ -33,7 +33,13 @@ def load_pdfs(pdf_files):
 
 def setup_langchain_with_rag(pdf_files, model):
     text_elements = load_pdfs(pdf_files)
-    embeddings = OpenAIEmbeddings(model="text-embedding-ada-002",openai_api_key=openai.api_key)
+    api_key = resolve_openai_api_key()
+    if not api_key:
+        raise RuntimeError(
+            "RAG embeddings require an OpenAI API key. Set OPENAI_API_KEY or "
+            "add openai_token to .streamlit/secrets.toml."
+        )
+    embeddings = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=api_key)
     vector_store = FAISS.from_texts(text_elements, embeddings)
     retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
     combine_docs_chain = create_stuff_documents_chain(model, retrieval_qa_chat_prompt)
