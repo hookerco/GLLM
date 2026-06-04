@@ -1,5 +1,28 @@
-# ignore file containing API keys
+# Local secrets and environment
 secrets.toml
+.streamlit/secrets.toml
+.env
+.env.*
+!.env.example
+
+# Python generated files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Codex/local run artifacts
+.codex-log/
+codex-output.md
 
 # User-specific stuff
 .idea/**/workspace.xml
