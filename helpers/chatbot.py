@@ -4,18 +4,21 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
 import os
+from gllm.utils.auth_utils import resolve_huggingface_token, resolve_openai_api_key
 
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["huggingface_token"]
+huggingface_token = resolve_huggingface_token()
+if huggingface_token:
+    os.environ["HUGGINGFACEHUB_API_TOKEN"] = huggingface_token
 
-try:
-    os.environ["OPENAI_API_KEY"] = st.secrets["openai_token"]
+openai_api_key = resolve_openai_api_key()
+if openai_api_key:
+    os.environ["OPENAI_API_KEY"] = openai_api_key
     use_openai = True
-except KeyError:
+else:
     use_openai = False
-    pass
 
 
 MODELS = {'bloom': 'bigscience/bloom',

@@ -51,7 +51,7 @@ def main():
     
 
     # Drop-down menu for model selection
-    model_str = st.selectbox('Choose a Language Model:', ('Zephyr-7b', 'GPT-3.5', 'Fine-tuned StarCoder', 'CodeLlama'), index=1)
+    model_str = st.selectbox('Choose a Language Model:', ('Codex OAuth', 'Zephyr-7b', 'GPT-3.5', 'Fine-tuned StarCoder', 'CodeLlama'), index=0)
     model = setup_model(model=model_str)
 
     # Let the user choose whether to use structured or unstructured prompt

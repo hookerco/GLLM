@@ -69,7 +69,11 @@ def generate_task_descriptions(chain, model_str, input_description):
         response = chain.invoke(subtasks_prompt)
 
     # prepare response according to the model
-    task_descriptions = response.content.strip().split("\n\n") if model_str == 'GPT-3.5' else response.strip().split("\n\n") 
+    task_descriptions = (
+        response.content.strip().split("\n\n")
+        if hasattr(response, "content")
+        else str(response).strip().split("\n\n")
+    )
     
     return task_descriptions
 
@@ -443,4 +447,3 @@ def validate_gcode(gcode_string):
                     is_valid_tool_change and \
                     is_tool_offset and \
                     is_valid_spindle_speed else False
-

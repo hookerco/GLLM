@@ -13,33 +13,26 @@ Authors: Mohamed Abdelaal, Samuel Lokadjaja
 This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is published under the Apache License 2.0.
 """
 
-import os
-import toml
-import openai
 from peft import PeftModel, PeftConfig
 from transformers import AutoModelForCausalLM, pipeline 
 from langchain_openai import ChatOpenAI
-from utils.prompts_utils import SYSTEM_MESSAGE
+from gllm.utils.auth_utils import resolve_huggingface_token, resolve_openai_api_key
+from gllm.utils.codex_model import CodexCliLanguageModel, CodexPromptChain
+from gllm.utils.prompts_utils import SYSTEM_MESSAGE
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.llms import HuggingFaceEndpoint, HuggingFacePipeline
 from langchain_community.chat_models.huggingface import ChatHuggingFace
 from transformers import AutoTokenizer
 
 
-# Define the path to the secrets.toml file
-secrets_file_path = os.path.abspath(os.path.join(os.path.dirname('__file__'), '.streamlit', 'secrets.toml'))
-# Load the secrets
-secrets = toml.load(secrets_file_path)
-# Set your OpenAI API key
-openai.api_key = secrets["openai_token"]
-
-
 def setup_model(model:str):
     if model == "Zephyr-7b":
         ENDPOINT_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
+        huggingface_token = resolve_huggingface_token()
         llm = HuggingFaceEndpoint(
                 endpoint_url=ENDPOINT_URL,
                 task="text-generation",
+                huggingfacehub_api_token=huggingface_token,
                 max_new_tokens=512,
                 top_k=50,
                 temperature=0.1,
@@ -53,18 +46,31 @@ def setup_model(model:str):
         llm = PeftModel.from_pretrained(base_model, "ArneKreuz/starcoderbase-finetuned-thestack", force_download=True)
 
     elif model == "GPT-3.5":
-        #llm = OpenAI(api_key=openai.api_key)
-        llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.7, api_key=openai.api_key)
+        api_key = resolve_openai_api_key()
+        if not api_key:
+            raise RuntimeError(
+                "OpenAI API key is missing. Set OPENAI_API_KEY or add openai_token "
+                "to .streamlit/secrets.toml."
+            )
+        llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.7, api_key=api_key)
 
     elif model == 'CodeLlama':
         model_name = "codellama/CodeLlama-7b-hf"
         llm = AutoModelForCausalLM.from_pretrained(model_name)
         ## llm = pipeline("text-generation", model="codellama/CodeLlama-7b-hf")
+
+    elif model == "Codex OAuth":
+        llm = CodexCliLanguageModel()
         
+    else:
+        raise ValueError(f"Unsupported model: {model}")
 
     return llm
 
 def setup_langchain_without_rag(model):
+    if isinstance(model, CodexCliLanguageModel):
+        return CodexPromptChain(model, SYSTEM_MESSAGE)
+
     # create a prompt
     prompt = ChatPromptTemplate.from_messages(
             [
