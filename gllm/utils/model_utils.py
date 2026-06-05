@@ -13,8 +13,6 @@ Authors: Mohamed Abdelaal, Samuel Lokadjaja
 This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is published under the Apache License 2.0.
 """
 
-from peft import PeftModel, PeftConfig
-from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
 from langchain_openai import ChatOpenAI
 from gllm.utils.auth_utils import (
     resolve_huggingface_token,
@@ -25,11 +23,27 @@ from gllm.utils.auth_utils import (
 from gllm.utils.codex_model import CodexCliLanguageModel, CodexPromptChain
 from gllm.utils.prompts_utils import SYSTEM_MESSAGE
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_community.llms import HuggingFaceEndpoint, HuggingFacePipeline
-from langchain_community.chat_models.huggingface import ChatHuggingFace
+
+OPENROUTER_DEFAULT_MODEL = "openrouter/free"
+MODEL_OPTIONS = (
+    "OpenRouter",
+    "Codex OAuth",
+    "Zephyr-7b",
+    "GPT-3.5",
+    "Fine-tuned StarCoder",
+    "CodeLlama",
+)
+DEFAULT_MODEL = "OpenRouter"
+
+
+def get_openrouter_model_name() -> str:
+    return resolve_streamlit_secret("openrouter_model") or OPENROUTER_DEFAULT_MODEL
+
 
 def setup_model(model: str):
     if model == "Zephyr-7b":
+        from langchain_community.llms import HuggingFaceEndpoint
+
         ENDPOINT_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
         huggingface_token = resolve_huggingface_token()
         llm = HuggingFaceEndpoint(
@@ -42,6 +56,10 @@ def setup_model(model: str):
             repetition_penalty=1.03,
         )
     elif model == "Fine-tuned StarCoder":
+        from peft import PeftModel, PeftConfig
+        from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
+        from langchain_community.llms import HuggingFacePipeline
+
         # Load the fine tuned model and wrap it in a pipeline so it can be used
         # directly with LangChain runnables.
         PeftConfig.from_pretrained("ArneKreuz/starcoderbase-finetuned-thestack")
@@ -73,7 +91,7 @@ def setup_model(model: str):
                 "OpenRouter API key is missing. Set OPENROUTER_API_KEY or add "
                 "openrouter_token to .streamlit/secrets.toml."
             )
-        openrouter_model = resolve_streamlit_secret("openrouter_model") or "openrouter/free"
+        openrouter_model = get_openrouter_model_name()
         llm = ChatOpenAI(
             model=openrouter_model,
             temperature=0.7,
@@ -86,6 +104,9 @@ def setup_model(model: str):
         )
 
     elif model == 'CodeLlama':
+        from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
+        from langchain_community.llms import HuggingFacePipeline
+
         # Wrap the model inside a transformers pipeline to ensure text input works with LangChain.
         model_name = "codellama/CodeLlama-7b-hf"
         model_llm = AutoModelForCausalLM.from_pretrained(model_name)

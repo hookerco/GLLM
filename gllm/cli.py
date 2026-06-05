@@ -2,7 +2,7 @@ import argparse
 import uuid
 
 from gllm.utils.rag_utils import setup_langchain_with_rag
-from gllm.utils.model_utils import setup_model, setup_langchain_without_rag
+from gllm.utils.model_utils import DEFAULT_MODEL, MODEL_OPTIONS, setup_model, setup_langchain_without_rag
 from gllm.utils.params_extraction_utils import (
     extract_parameters_logic,
     parse_extracted_parameters,
@@ -37,8 +37,8 @@ def main():
     parser = argparse.ArgumentParser(description="G-code Generator CLI")
     parser.add_argument(
         "--model",
-        choices=["Zephyr-7b", "GPT-3.5", "Fine-tuned StarCoder", "CodeLlama", "OpenRouter"],
-        default="GPT-3.5",
+        choices=MODEL_OPTIONS,
+        default=DEFAULT_MODEL,
         help="Language model to use",
     )
     parser.add_argument(

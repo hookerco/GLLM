@@ -16,6 +16,7 @@ This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is publis
 
 import re
 import math
+from json import JSONDecodeError
 import streamlit as st
 from gllm.utils.prompts_utils import REQUIRED_PARAMETERS
 
@@ -80,7 +81,17 @@ def extract_parameters_with_langchain(chain, task_description):
         "\n"
         "Task description: {}\n\nExtracted parameters:".format(task_description)
     )
-    response = chain.invoke({'input':prompt})
+    try:
+        response = chain.invoke({'input': prompt})
+    except JSONDecodeError as exc:
+        raise RuntimeError(
+            "The selected model provider returned a non-JSON response while "
+            "extracting parameters. This can happen if OpenRouter returns a "
+            "transient upstream error, rate-limit page, or router response that "
+            "the OpenAI client cannot parse. Try again, choose a specific "
+            "openrouter_model such as provider/model-name:free, or switch to "
+            "another configured model."
+        ) from exc
     return response
 
 

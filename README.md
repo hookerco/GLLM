@@ -35,7 +35,7 @@ To use `Huggingface` models, it is required to save the API access token as an e
   <li> Register or login at <a href="https://huggingface.co">Hugging Face</a> and create an API token in your profile settings </li>
   <li> Add a file called <code>secrets.toml</code> in a folder called <code>.streamlit</code> at the root of the repo, and provide your HuggingFace API token by typing <code>huggingface_token = "..."</code>
   <li> For `OpenAI` models, add the access token <code>openai_token = "YourOpenAITokenHere" </code> to `.streamlit/secrets.toml`. </li>
-  <li> To use models via <a href="https://openrouter.ai">OpenRouter</a>, add <code>openrouter_token = "YourOpenRouterTokenHere"</code> to the same file. Optionally specify <code>openrouter_model = "provider/model-name"</code> to choose a model.</li>
+  <li> To use models via <a href="https://openrouter.ai">OpenRouter</a>, add <code>openrouter_token = "YourOpenRouterTokenHere"</code> to the same file. Optionally specify <code>openrouter_model = "provider/model-name"</code> to choose a model. If no model is specified, the app uses <code>openrouter/free</code>.</li>
 </ol>
 
 or you can open your shell's configuration file in a text editor: 
@@ -57,6 +57,25 @@ source ~/.bashrc
 To run the GLLM application:
 ```shell
 poetry run streamlit run gllm/code_generator_streamlit_reasoning_langchain_langgraph.py
+```
+
+On Windows, OpenRouter is the default model in the app and CLI. For Codex or
+agent-based browser testing, prefer the detached launcher so the terminal does
+not wait on the long-running Streamlit server:
+
+```powershell
+.\scripts\start_streamlit_detached.ps1
+```
+
+The script reuses an existing listener on port `8501` when one exists. If no
+listener exists, it starts a hidden worker and returns immediately; the worker
+starts Streamlit, waits for `http://localhost:8501`, and records logs and PID
+details in `.codex-log/`.
+
+To use the CLI with the same default model:
+
+```powershell
+poetry run python -m gllm.cli --prompt-type Unstructured
 ```
 
 

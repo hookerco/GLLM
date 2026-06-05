@@ -16,23 +16,43 @@ This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is publis
 
 import uuid
 import streamlit as st
-from gllm.utils.rag_utils import setup_langchain_with_rag
-from gllm.utils.model_utils import setup_model, setup_langchain_without_rag
+from gllm.utils.model_utils import (
+    DEFAULT_MODEL,
+    MODEL_OPTIONS,
+    get_openrouter_model_name,
+    setup_model,
+    setup_langchain_without_rag,
+)
 from gllm.utils.params_extraction_utils import extract_parameters_logic, display_extracted_parameters, parse_extracted_parameters, extract_numerical_values
 from gllm.utils.gcode_utils import display_generated_gcode, generate_gcode_logic, plot_generated_gcode, validate_gcode, clean_gcode, generate_gcode_unstructured_prompt, generate_task_descriptions
 from gllm.utils.graph_utils import construct_graph, _print_event
 from gllm.utils.plot_utils import plot_user_specification, refine_gcode
-import plotly.express as px  # Import Plotly Express
 from gllm.utils.params_extraction_utils import from_dict_to_text
     
 
 def extract_parameters(description_text):
-        
-        extracted_parameters, missing_parameters = extract_parameters_logic(st.session_state['langchain_chain'], description_text)
+        try:
+            extracted_parameters, missing_parameters = extract_parameters_logic(st.session_state['langchain_chain'], description_text)
+        except RuntimeError as exc:
+            st.error(str(exc))
+            st.stop()
+
         # update the relevant Streamlit states
         st.session_state['extracted_parameters'] = from_dict_to_text(extracted_parameters)
         st.session_state['missing_parameters'] = missing_parameters
         st.session_state['user_inputs'].update(extracted_parameters)
+
+
+def get_or_setup_model(session_state, model_str, setup_model_fn=setup_model):
+    if session_state.get("selected_model") != model_str:
+        session_state["selected_model"] = model_str
+        session_state.pop("langchain_chain", None)
+        session_state.pop("model_instance", None)
+
+    if "model_instance" not in session_state:
+        session_state["model_instance"] = setup_model_fn(model_str)
+
+    return session_state["model_instance"]
 
 
 def main():
@@ -53,19 +73,17 @@ def main():
     # Drop-down menu for model selection
     model_str = st.selectbox(
         'Choose a Language Model:',
-        ('Codex OAuth', 'Zephyr-7b', 'GPT-3.5', 'Fine-tuned StarCoder', 'CodeLlama', 'OpenRouter'),
-        index=0,
+        MODEL_OPTIONS,
+        index=MODEL_OPTIONS.index(DEFAULT_MODEL),
     )
+    if model_str == "OpenRouter":
+        st.caption(f"OpenRouter model: {get_openrouter_model_name()}")
 
-    # Store selected model in the session state and rebuild the chain if needed
-    if "selected_model" not in st.session_state:
-        st.session_state["selected_model"] = model_str
-    elif st.session_state["selected_model"] != model_str:
-        st.session_state["selected_model"] = model_str
-        if "langchain_chain" in st.session_state:
-            del st.session_state["langchain_chain"]
-
-    model = setup_model(model=st.session_state["selected_model"])
+    try:
+        model = get_or_setup_model(st.session_state, model_str)
+    except RuntimeError as exc:
+        st.error(str(exc))
+        st.stop()
 
     # Let the user choose whether to use structured or unstructured prompt
     prompt_type = st.selectbox('Prompt Type:', ('Structured', 'Unstructured'), index=0)
@@ -73,10 +91,16 @@ def main():
     pdf_files = st.file_uploader("Upload PDF files with additional knowledge (RAG)", accept_multiple_files=True, type=['pdf'])
 
     if "langchain_chain" not in st.session_state:
-        if pdf_files:
-            st.session_state['langchain_chain'] = setup_langchain_with_rag(pdf_files, model)
-        else:
-            st.session_state['langchain_chain'] = setup_langchain_without_rag(model=model)
+        try:
+            if pdf_files:
+                from gllm.utils.rag_utils import setup_langchain_with_rag
+
+                st.session_state['langchain_chain'] = setup_langchain_with_rag(pdf_files, model)
+            else:
+                st.session_state['langchain_chain'] = setup_langchain_without_rag(model=model)
+        except RuntimeError as exc:
+            st.error(str(exc))
+            st.stop()
         
     if "extracted_parameters" not in st.session_state:
         st.session_state['extracted_parameters'] = None
