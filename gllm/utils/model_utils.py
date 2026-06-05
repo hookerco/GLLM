@@ -73,7 +73,7 @@ def setup_model(model: str):
                 "OpenRouter API key is missing. Set OPENROUTER_API_KEY or add "
                 "openrouter_token to .streamlit/secrets.toml."
             )
-        openrouter_model = resolve_streamlit_secret("openrouter_model") or "openai/gpt-3.5-turbo"
+        openrouter_model = resolve_streamlit_secret("openrouter_model") or "openrouter/free"
         llm = ChatOpenAI(
             model=openrouter_model,
             temperature=0.7,

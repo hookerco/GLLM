@@ -61,7 +61,12 @@ def load_toml_secrets(path: Path | str = ".streamlit/secrets.toml") -> Mapping[s
 
 def _default_secrets() -> Mapping[str, str]:
     streamlit_secrets = load_streamlit_secrets()
-    if streamlit_secrets:
+    try:
+        has_streamlit_secrets = len(streamlit_secrets) > 0
+    except Exception:
+        has_streamlit_secrets = False
+
+    if has_streamlit_secrets:
         return streamlit_secrets
     return load_toml_secrets()
 

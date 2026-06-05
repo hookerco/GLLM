@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from gllm.utils.auth_utils import (
     AuthStatus,
@@ -55,6 +56,22 @@ class AuthUtilsTests(unittest.TestCase):
         value = resolve_streamlit_secret("openrouter_model", secrets={"openrouter_model": "openai/gpt-4o"})
 
         self.assertEqual(value, "openai/gpt-4o")
+
+    def test_missing_streamlit_secrets_falls_back_without_raising(self):
+        class MissingStreamlitSecrets:
+            def __bool__(self):
+                raise FileNotFoundError("No secrets files found")
+
+        with (
+            patch(
+                "gllm.utils.auth_utils.load_streamlit_secrets",
+                return_value=MissingStreamlitSecrets(),
+            ),
+            patch("gllm.utils.auth_utils.load_toml_secrets", return_value={}),
+        ):
+            key = resolve_openrouter_api_key(env={})
+
+        self.assertIsNone(key)
 
 
 if __name__ == "__main__":
