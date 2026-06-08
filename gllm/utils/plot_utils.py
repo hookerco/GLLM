@@ -176,7 +176,7 @@ def plot_user_specification(parsed_parameters):
     x_path, y_path, _ = zip(*tool_path)  # Ignore z-coordinates for 2D plot
 
     # Move to starting point if not already at the beginning
-    if tool_path and (start_point[0], start_point[1]) != tool_path[0]:
+    if tool_path and (start_point[0], start_point[1]) != (tool_path[0][0], tool_path[0][1]):
         x_path = (start_point[0],) + x_path
         y_path = (start_point[1],) + y_path
 
@@ -187,9 +187,15 @@ def plot_user_specification(parsed_parameters):
     ax.set_title('CNC Task Visualization (2D)')
     ax.legend()
 
-    # Set axis limits to match workpiece dimensions
-    ax.set_xlim([0, wp_dims[0]])
-    ax.set_ylim([0, wp_dims[1]])
+    # Include both the workpiece and any path coordinates outside its origin.
+    x_values = list(x_path) + [0, wp_dims[0]]
+    y_values = list(y_path) + [0, wp_dims[1]]
+    x_min, x_max = min(x_values), max(x_values)
+    y_min, y_max = min(y_values), max(y_values)
+    x_margin = max((x_max - x_min) * 0.05, 0.5)
+    y_margin = max((y_max - y_min) * 0.05, 0.5)
+    ax.set_xlim([x_min - x_margin, x_max + x_margin])
+    ax.set_ylim([y_min - y_margin, y_max + y_margin])
 
     # Add cut depth as text annotation
     ax.text(0.05, 0.95, f'Cut Depth: {cut_depth}mm', 

@@ -123,7 +123,7 @@ def from_dict_to_text(input:dict):
 def extract_numerical_values(parameters: dict, key: str):
     if key in parameters:
         # Regular expression to match numerical values
-        numbers = re.findall(r'\d+', parameters[key])
+        numbers = re.findall(r'-?\d+(?:\.\d+)?', parameters[key])
         # Convert the extracted numbers to float
         numbers = list(map(float, numbers))
     else:
@@ -133,11 +133,19 @@ def extract_numerical_values(parameters: dict, key: str):
 
 
 def extract_path(parameters: dict, key: str):
-    # Regular expression to find coordinates
-    pattern = r'(?:x=)?(-?\d+\.?\d*)\s*,\s*(?:y=)?(-?\d+\.?\d*)\s*(?:,\s*(?:z=)?(-?\d+\.?\d*))?'
+    # Prefer explicitly labeled tool-path coordinates, e.g. x3.0, y0.0.
+    # This avoids mistaking "center (0,0)" helper text for a path point.
+    labeled_pattern = (
+        r'[xX]\s*=?\s*(-?\d+(?:\.\d+)?)\s*,?\s*'
+        r'[yY]\s*=?\s*(-?\d+(?:\.\d+)?)'
+        r'(?:\s*,?\s*[zZ]\s*=?\s*(-?\d+(?:\.\d+)?))?'
+    )
+    matches = re.findall(labeled_pattern, parameters[key])
 
-    # Find all matches
-    matches = re.findall(pattern, parameters[key])
+    if not matches:
+        # Fallback for simple unlabeled coordinate tuples like (1.0, 2.0, 0.0).
+        tuple_pattern = r'\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)(?:,\s*(-?\d+(?:\.\d+)?))?\)'
+        matches = re.findall(tuple_pattern, parameters[key])
 
     # Convert matches to tuples of floats and set z to 0 if not given
     coordinates = [(float(x), float(y), float(z) if z else 0.0) for x, y, z in matches]

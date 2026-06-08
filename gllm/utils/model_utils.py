@@ -36,11 +36,14 @@ MODEL_OPTIONS = (
 DEFAULT_MODEL = "OpenRouter"
 
 
-def get_openrouter_model_name() -> str:
+def get_openrouter_model_name(openrouter_model_name: str | None = None) -> str:
+    if openrouter_model_name and openrouter_model_name.strip():
+        return openrouter_model_name.strip()
+
     return resolve_streamlit_secret("openrouter_model") or OPENROUTER_DEFAULT_MODEL
 
 
-def setup_model(model: str):
+def setup_model(model: str, openrouter_model_name: str | None = None):
     if model == "Zephyr-7b":
         from langchain_community.llms import HuggingFaceEndpoint
 
@@ -91,7 +94,7 @@ def setup_model(model: str):
                 "OpenRouter API key is missing. Set OPENROUTER_API_KEY or add "
                 "openrouter_token to .streamlit/secrets.toml."
             )
-        openrouter_model = get_openrouter_model_name()
+        openrouter_model = get_openrouter_model_name(openrouter_model_name)
         llm = ChatOpenAI(
             model=openrouter_model,
             temperature=0.7,

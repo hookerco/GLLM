@@ -43,14 +43,31 @@ def extract_parameters(description_text):
         st.session_state['user_inputs'].update(extracted_parameters)
 
 
-def get_or_setup_model(session_state, model_str, setup_model_fn=setup_model):
-    if session_state.get("selected_model") != model_str:
-        session_state["selected_model"] = model_str
+def get_or_setup_model(
+    session_state,
+    model_str,
+    setup_model_fn=setup_model,
+    openrouter_model_name=None,
+):
+    openrouter_selection = None
+    if model_str == "OpenRouter" and openrouter_model_name:
+        openrouter_selection = openrouter_model_name.strip() or None
+
+    selection_key = (model_str, openrouter_selection)
+
+    if session_state.get("selected_model") != selection_key:
+        session_state["selected_model"] = selection_key
         session_state.pop("langchain_chain", None)
         session_state.pop("model_instance", None)
 
     if "model_instance" not in session_state:
-        session_state["model_instance"] = setup_model_fn(model_str)
+        if model_str == "OpenRouter":
+            session_state["model_instance"] = setup_model_fn(
+                model_str,
+                openrouter_model_name=openrouter_model_name,
+            )
+        else:
+            session_state["model_instance"] = setup_model_fn(model_str)
 
     return session_state["model_instance"]
 
@@ -76,11 +93,19 @@ def main():
         MODEL_OPTIONS,
         index=MODEL_OPTIONS.index(DEFAULT_MODEL),
     )
+    openrouter_model_name = None
     if model_str == "OpenRouter":
-        st.caption(f"OpenRouter model: {get_openrouter_model_name()}")
+        openrouter_model_name = st.text_input(
+            "OpenRouter model ID",
+            value=get_openrouter_model_name(),
+        )
 
     try:
-        model = get_or_setup_model(st.session_state, model_str)
+        model = get_or_setup_model(
+            st.session_state,
+            model_str,
+            openrouter_model_name=openrouter_model_name,
+        )
     except RuntimeError as exc:
         st.error(str(exc))
         st.stop()

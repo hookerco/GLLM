@@ -68,6 +68,32 @@ class ModelUtilsTests(unittest.TestCase):
         _, kwargs = chat_openai.call_args
         self.assertEqual(kwargs["model"], "qwen/qwen3-coder:free")
 
+    def test_openrouter_uses_explicit_model_name(self):
+        with (
+            patch("gllm.utils.model_utils.resolve_openrouter_api_key", return_value="key"),
+            patch("gllm.utils.model_utils.resolve_streamlit_secret") as streamlit_secret,
+            patch("gllm.utils.model_utils.ChatOpenAI") as chat_openai,
+        ):
+            setup_model("OpenRouter", openrouter_model_name="anthropic/claude-3.5-sonnet")
+
+        streamlit_secret.assert_not_called()
+        _, kwargs = chat_openai.call_args
+        self.assertEqual(kwargs["model"], "anthropic/claude-3.5-sonnet")
+
+    def test_openrouter_explicit_model_name_falls_back_when_blank(self):
+        with (
+            patch("gllm.utils.model_utils.resolve_openrouter_api_key", return_value="key"),
+            patch(
+                "gllm.utils.model_utils.resolve_streamlit_secret",
+                return_value="qwen/qwen3-coder:free",
+            ),
+            patch("gllm.utils.model_utils.ChatOpenAI") as chat_openai,
+        ):
+            setup_model("OpenRouter", openrouter_model_name=" ")
+
+        _, kwargs = chat_openai.call_args
+        self.assertEqual(kwargs["model"], "qwen/qwen3-coder:free")
+
 
 if __name__ == "__main__":
     unittest.main()
