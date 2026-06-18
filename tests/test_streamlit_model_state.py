@@ -1,8 +1,12 @@
 import subprocess
 import sys
 import unittest
+from unittest.mock import patch
 
-from gllm.code_generator_streamlit_reasoning_langchain_langgraph import get_or_setup_model
+from gllm.code_generator_streamlit_reasoning_langchain_langgraph import (
+    get_or_setup_model,
+    select_proof_candidate_gcode,
+)
 
 
 class StreamlitModelStateTests(unittest.TestCase):
@@ -90,6 +94,80 @@ class StreamlitModelStateTests(unittest.TestCase):
             ],
         )
         self.assertNotIn("langchain_chain", state)
+
+    def test_manual_proof_candidate_wins_over_generated_gcode(self):
+        self.assertEqual(
+            select_proof_candidate_gcode(
+                " G20\nG90\nM30\n",
+                "G20\nG90\nT1 M06\nM30\n",
+            ),
+            "G20\nG90\nM30",
+        )
+
+    def test_generated_gcode_is_proof_candidate_fallback(self):
+        self.assertEqual(
+            select_proof_candidate_gcode("", " G20\nG90\nT1 M06\nM30\n"),
+            "G20\nG90\nT1 M06\nM30",
+        )
+
+    def test_blank_proof_candidate_resolves_empty(self):
+        self.assertEqual(select_proof_candidate_gcode("  ", None), "")
+
+    def test_existing_gcode_proof_helper_uses_current_generated_candidate(self):
+        from gllm.code_generator_streamlit_reasoning_langchain_langgraph import (
+            run_existing_gcode_proof,
+        )
+
+        expected_packet = object()
+        with patch(
+            "gllm.code_generator_streamlit_reasoning_langchain_langgraph.run_proof_scenario",
+            return_value=expected_packet,
+        ) as proof_runner:
+            packet = run_existing_gcode_proof(
+                prompt="Mill a square.",
+                gcode="G90\nT1 M06\nG0 Z1.0\nM30\n",
+                registry_path="config/vericut_setups.example.json",
+                setup_id="sample_haas",
+                output_root=".proof-runs",
+                run_vericut=True,
+                model_name="OpenRouter",
+                timeout_seconds=120,
+                scenario_id="ui-proof",
+            )
+
+        self.assertIs(packet, expected_packet)
+        request = proof_runner.call_args.args[0]
+        candidate_generator = proof_runner.call_args.kwargs["candidate_generator"]
+        self.assertEqual(request.prompt, "Mill a square.")
+        self.assertEqual(request.setup_id, "sample_haas")
+        self.assertEqual(request.scenario_id, "ui-proof")
+        self.assertTrue(request.run_vericut)
+        self.assertEqual(request.timeout_seconds, 120)
+        self.assertEqual(
+            candidate_generator("ignored repair prompt", object()),
+            "G90\nT1 M06\nG0 Z1.0\nM30\n",
+        )
+
+    def test_proof_verdict_card_prioritizes_operator_action_and_evidence_path(self):
+        from gllm.code_generator_streamlit_reasoning_langchain_langgraph import (
+            proof_verdict_card,
+        )
+
+        card = proof_verdict_card(
+            {
+                "status": "accepted_static_only",
+                "operator_action": "rerun_vericut",
+                "final_attempt": 1,
+                "packet_file": ".proof-runs/sample/evidence_packet.json",
+                "attempts": [{"status": "accepted_static_only"}],
+            }
+        )
+
+        self.assertEqual(card["severity"], "warning")
+        self.assertEqual(card["headline"], "accepted_static_only")
+        self.assertEqual(card["operator_action"], "rerun_vericut")
+        self.assertEqual(card["attempts"], 1)
+        self.assertEqual(card["evidence_packet"], ".proof-runs/sample/evidence_packet.json")
 
 
 if __name__ == "__main__":

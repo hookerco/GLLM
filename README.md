@@ -78,6 +78,43 @@ To use the CLI with the same default model:
 poetry run python -m gllm.cli --prompt-type Unstructured
 ```
 
+To build a prompt-to-verdict evidence packet from an existing generated program:
+
+```powershell
+poetry run python -m gllm.proof.cli --registry config/vericut_setups.example.json --setup-id vericut96_haas_minimill_sample --prompt "Mill a simple square pocket." --candidate-gcode-file path\to\generated.nc --output-root .proof-runs
+```
+
+The proof-run CLI writes `evidence_packet.json` and `evidence_packet.md` with
+the prompt, setup ID, candidate G-code, static-check findings, staged Vericut
+job, optional Vericut verdict, operator action, and repair context. See
+`docs/prompt_to_verdict.md`.
+
+To run the checked-in prompt corpus against the sample setups:
+
+```powershell
+poetry run python -m gllm.proof.corpus_cli --corpus config/proof_prompt_corpus.example.json --registry config/vericut_setups.example.json --output-root .proof-runs\corpus-smoke
+```
+
+The corpus includes a live-control Haas MiniMill fixture, smaller passing and
+intentionally rejected MiniMill fixtures, and a second Haas VF3 sample setup. It
+is the regression target for proving that prompt-to-verdict behavior is
+scenario-based rather than a single hand-tuned prompt.
+
+### Vericut Integration
+
+This repo now includes a local Vericut staging CLI for generated G-code. It loads a setup registry, runs conservative static checks, copies referenced local Vericut assets into an ignored job folder, and prints the `vericut.bat BATCH ...` command.
+
+```powershell
+poetry run python -m gllm.vericut.cli --registry config/vericut_setups.example.json --setup-id vericut96_haas_minimill_sample --gcode-file path\to\generated.nc --output-root .vericut-runs
+```
+
+See `docs/vericut_integration.md` before adding proprietary machine setups.
+
+When run with `--run-vericut`, the CLI writes `output/verdict.json` and
+`output/verdict.md`. The verdict parser reads Vericut's log, so a Vericut
+process return code of `0` is still rejected when the log reports toolpath
+errors.
+
 
 ### Question Generation
 This file contains code that takes in text and generates question-answer pairs which could be used for LLM evaluation or instruction tuning.

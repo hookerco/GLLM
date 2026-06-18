@@ -16,6 +16,7 @@ This work was done at Software AG, Darmstadt, Germany in 2023-2024 and is publis
 
 import uuid
 import streamlit as st
+from gllm.proof.runner import ScenarioRequest, run_proof_scenario
 from gllm.utils.model_utils import (
     DEFAULT_MODEL,
     MODEL_OPTIONS,
@@ -29,6 +30,9 @@ from gllm.utils.graph_utils import construct_graph, _print_event
 from gllm.utils.plot_utils import plot_user_specification, refine_gcode
 from gllm.utils.params_extraction_utils import from_dict_to_text
     
+DEFAULT_PROOF_REGISTRY = "config/vericut_setups.example.json"
+DEFAULT_PROOF_OUTPUT_ROOT = ".proof-runs"
+
 
 def extract_parameters(description_text):
         try:
@@ -70,6 +74,154 @@ def get_or_setup_model(
             session_state["model_instance"] = setup_model_fn(model_str)
 
     return session_state["model_instance"]
+
+
+def run_existing_gcode_proof(
+    *,
+    prompt,
+    gcode,
+    registry_path,
+    setup_id,
+    output_root,
+    run_vericut,
+    model_name,
+    timeout_seconds=None,
+    scenario_id=None,
+):
+    request = ScenarioRequest(
+        prompt=prompt,
+        registry_path=registry_path,
+        setup_id=setup_id,
+        output_root=output_root,
+        scenario_id=scenario_id,
+        model_name=model_name,
+        prompt_type="Streamlit generated candidate",
+        run_vericut=run_vericut,
+        max_repair_attempts=0,
+        timeout_seconds=timeout_seconds,
+    )
+    return run_proof_scenario(
+        request,
+        candidate_generator=lambda _prompt, _context: gcode,
+    )
+
+
+def select_proof_candidate_gcode(candidate_gcode, generated_gcode):
+    candidate = (candidate_gcode or "").strip()
+    if candidate:
+        return candidate
+    return (generated_gcode or "").strip()
+
+
+def proof_verdict_card(payload):
+    status = payload.get("status", "unknown")
+    operator_action = payload.get("operator_action", "manual_review_required")
+    attempts = payload.get("final_attempt") or len(payload.get("attempts", []))
+    severity = "info"
+    if operator_action == "ready_to_review":
+        severity = "success"
+    elif operator_action in {"rerun_vericut", "manual_review_required"}:
+        severity = "warning"
+    elif operator_action in {"fix_prompt", "fix_setup", "reject"}:
+        severity = "error"
+    return {
+        "headline": status,
+        "severity": severity,
+        "operator_action": operator_action,
+        "attempts": attempts,
+        "evidence_packet": payload.get("packet_file"),
+    }
+
+
+def display_proof_packet_summary(payload):
+    card = proof_verdict_card(payload)
+    message = (
+        f"Proof status: {card['headline']} | "
+        f"Operator action: {card['operator_action']}"
+    )
+    if card["severity"] == "success":
+        st.success(message)
+    elif card["severity"] == "warning":
+        st.warning(message)
+    elif card["severity"] == "error":
+        st.error(message)
+    else:
+        st.info(message)
+
+    columns = st.columns(3)
+    columns[0].metric("Status", card["headline"])
+    columns[1].metric("Action", card["operator_action"])
+    columns[2].metric("Attempts", card["attempts"])
+    if card["evidence_packet"]:
+        st.write(f"Evidence packet: {card['evidence_packet']}")
+    with st.expander("Evidence details"):
+        st.json(payload)
+
+
+def display_proof_run_controls(input_description, model_str):
+    st.subheader("Proof Run")
+    generated_gcode = st.session_state.get("gcode") or ""
+    previous_generated_gcode = st.session_state.get("proof_candidate_generated_source", "")
+    if "proof_candidate_gcode" not in st.session_state:
+        st.session_state["proof_candidate_gcode"] = generated_gcode
+    elif (
+        generated_gcode
+        and st.session_state["proof_candidate_gcode"] == previous_generated_gcode
+    ):
+        st.session_state["proof_candidate_gcode"] = generated_gcode
+    st.session_state["proof_candidate_generated_source"] = generated_gcode
+
+    candidate_gcode = st.text_area(
+        "Candidate G-code",
+        height=180,
+        key="proof_candidate_gcode",
+    )
+    registry_path = st.text_input(
+        "Vericut setup registry",
+        value=DEFAULT_PROOF_REGISTRY,
+    )
+    setup_id = st.text_input(
+        "Setup ID",
+        value="vericut96_haas_minimill_sample",
+    )
+    output_root = st.text_input(
+        "Proof output root",
+        value=DEFAULT_PROOF_OUTPUT_ROOT,
+    )
+    run_vericut_checked = st.checkbox("Run Vericut batch simulation", value=False)
+    timeout_seconds = st.number_input(
+        "Vericut timeout seconds",
+        min_value=1,
+        value=900,
+        step=30,
+        disabled=not run_vericut_checked,
+    )
+
+    if st.button("Build proof packet"):
+        proof_gcode = select_proof_candidate_gcode(candidate_gcode, generated_gcode)
+        if not proof_gcode:
+            st.error("Candidate G-code is required before building a proof packet.")
+            return
+
+        proof_prompt = input_description.strip() or "Manual Streamlit proof candidate"
+        try:
+            packet = run_existing_gcode_proof(
+                prompt=proof_prompt,
+                gcode=proof_gcode,
+                registry_path=registry_path,
+                setup_id=setup_id,
+                output_root=output_root,
+                run_vericut=run_vericut_checked,
+                model_name=model_str,
+                timeout_seconds=int(timeout_seconds) if run_vericut_checked else None,
+            )
+        except Exception as exc:
+            st.error(f"Proof run failed: {exc}")
+            return
+
+        payload = packet.to_dict()
+        st.session_state["proof_packet"] = payload
+        display_proof_packet_summary(payload)
 
 
 def main():
@@ -218,6 +370,8 @@ def main():
     display_generated_gcode()
 
     plot_generated_gcode()
+
+    display_proof_run_controls(input_description, model_str)
 
      # Debug information
     if st.checkbox("Show Debug Info"):
