@@ -223,6 +223,10 @@ def _status_for(
     artifacts: tuple[VericutArtifact, ...],
 ) -> str:
     has_log = any(artifact.name.lower().endswith(".log") for artifact in artifacts)
+    # A rejection requires positive evidence that Vericut actually simulated the toolpath
+    # and reported errors. Per policy this holds even when the process return code is 0.
+    if has_log and parsed_log.error_count > 0:
+        return "vericut_rejected"
     if (
         static_report.passed
         and run_result.returncode == 0
@@ -230,9 +234,10 @@ def _status_for(
         and parsed_log.error_count == 0
     ):
         return "vericut_accepted"
-    if run_result.returncode == 0 and not has_log:
-        return "vericut_unverified"
-    return "vericut_rejected"
+    # No reported errors and not a clean accepted run: the simulation could not confirm
+    # the toolpath — it failed to launch, produced no log, or exited abnormally without
+    # reporting toolpath errors. That is "unverified", NOT a toolpath rejection.
+    return "vericut_unverified"
 
 
 def _markdown_summary(verdict: VericutVerdict) -> str:

@@ -110,7 +110,7 @@ function vericutPanel(v) {
   const map = {
     vericut_accepted: ["ACCEPTED", "good"],
     vericut_rejected: ["REJECTED — simulation found collisions / errors", "bad"],
-    vericut_unverified: ["UNVERIFIED — ran but produced no log", "warn"],
+    vericut_unverified: ["UNVERIFIED — Vericut did not return a clear result", "warn"],
     vericut_unavailable: ["UNAVAILABLE — Vericut could not run", "warn"],
   };
   const [label, cls] = map[v.status] || [String(v.status || "").toUpperCase(), "warn"];
