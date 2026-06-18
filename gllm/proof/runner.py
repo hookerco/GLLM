@@ -575,8 +575,11 @@ def run_proof_with_llm(
     existing build_repair_prompt builder. Pass `chain` to inject a fake in tests."""
     from gllm.loop.generator import LLMCandidateGenerator
 
+    resolved_model_name = model_name or (
+        request.model_name if request.model_name and request.model_name != "unknown" else None
+    ) or "OpenRouter"
     generator = LLMCandidateGenerator(
-        model_name=model_name or request.model_name or "OpenRouter",
+        model_name=resolved_model_name,
         openrouter_model_name=openrouter_model_name or request.openrouter_model_name,
         chain=chain,
     )
