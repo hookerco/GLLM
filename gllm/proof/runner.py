@@ -498,12 +498,6 @@ def _setup_constraints(setup) -> tuple[str, ...]:
     return setup_constraints(setup)
 
 
-def _format_optional_range(minimum: float | None, maximum: float | None) -> str:
-    lower = "-inf" if minimum is None else f"{minimum:g}"
-    upper = "inf" if maximum is None else f"{maximum:g}"
-    return f"[{lower}, {upper}]"
-
-
 def _job_to_dict(job: VericutJob) -> dict[str, object]:
     return {
         "job_id": job.job_id,
