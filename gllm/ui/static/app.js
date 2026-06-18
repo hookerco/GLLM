@@ -4,103 +4,125 @@ const $ = (id) => document.getElementById(id);
 let currentRun = null;
 let es = null;
 
-function escapeHtml(s) {
-  return (s || "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const esc = (s) => (s || "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const pad2 = (n) => String(n).padStart(2, "0");
+
+function setStatus(text, led) {
+  $("rd-status").innerHTML = `<i class="led ${led}"></i>${text}`;
 }
 
-function setVisibility() {
+/* ---------- intake wiring ---------- */
+function syncMode() {
   const mode = $("mode").value;
   $("seed-field").classList.toggle("hidden", mode === "generate");
   $("objective-field").classList.toggle("hidden", mode !== "improve");
+  $("rd-mode").textContent = mode.toUpperCase();
 }
-$("mode").addEventListener("change", setVisibility);
-setVisibility();
+function syncModel() {
+  const m = $("model").value;
+  $("orm-field").classList.toggle("hidden", m !== "OpenRouter");
+  $("rd-model").textContent = m || "—";
+}
+function syncVericutHint() {
+  const hasSetup = !!$("setup_id").value;
+  $("vericut-hint").textContent = hasSetup
+    ? "will simulate the selected setup"
+    : "requires a machine setup — skipped otherwise";
+}
+$("mode").addEventListener("change", syncMode);
+$("model").addEventListener("change", syncModel);
+$("setup_id").addEventListener("change", syncVericutHint);
+
+async function loadModels() {
+  try {
+    const res = await fetch("/api/models");
+    const { models, default: def } = await res.json();
+    const sel = $("model");
+    sel.innerHTML = "";
+    for (const m of models) {
+      const o = document.createElement("option");
+      o.value = m; o.textContent = m.toUpperCase();
+      if (m === def) o.selected = true;
+      sel.appendChild(o);
+    }
+  } catch (_) {
+    $("model").innerHTML = '<option value="OpenRouter">OPENROUTER</option>';
+  }
+  syncModel();
+}
 
 $("load-setups").addEventListener("click", async () => {
   const path = $("registry_path").value.trim();
   if (!path) { alert("Enter a registry path first."); return; }
   try {
     const res = await fetch(`/api/setups?registry_path=${encodeURIComponent(path)}`);
-    if (!res.ok) { const e = await res.json(); throw new Error(e.error || res.status); }
+    if (!res.ok) throw new Error((await res.json()).error || res.status);
     const setups = await res.json();
     const sel = $("setup_id");
-    sel.innerHTML = '<option value="">— none (lint-only) —</option>';
+    sel.innerHTML = '<option value="">— NONE · lint-only —</option>';
     for (const s of setups) {
       const o = document.createElement("option");
-      o.value = s.id;
-      o.textContent = s.description ? `${s.id} — ${s.description}` : s.id;
+      o.value = s.id; o.textContent = s.description ? `${s.id} — ${s.description}` : s.id;
       sel.appendChild(o);
     }
-    banner(`Loaded ${setups.length} setup(s).`, "good");
-  } catch (err) {
-    alert("Failed to load setups: " + err.message);
-  }
+    syncVericutHint();
+  } catch (err) { alert("Failed to load setups: " + err.message); }
 });
 
-function statusClass(blocking) { return blocking > 0 ? "bad" : "good"; }
-
-function banner(text, cls) {
-  const b = $("status-banner");
-  b.className = cls || "";
-  b.classList.remove("hidden");
-  b.textContent = text;
-}
-
+/* ---------- rendering ---------- */
 function renderAttemptCard(a) {
-  let card = document.getElementById(`attempt-${a.number}`);
+  $("placeholder").classList.add("hidden");
+  let card = $(`attempt-${a.number}`);
   if (!card) {
     card = document.createElement("div");
     card.className = "card";
     card.id = `attempt-${a.number}`;
     $("attempts").appendChild(card);
   }
-  const findings = a.findings
-    .map(
-      (f) =>
-        `<li class="sev-${f.severity}"><code>${escapeHtml(f.code)}</code>${
-          f.line_number != null ? ` (line ${f.line_number})` : ""
-        }: ${escapeHtml(f.message)}</li>`
-    )
-    .join("");
-  const obj = a.objective_value != null ? ` · objective ${a.objective_value.toFixed(2)}` : "";
+  const ok = a.blocking_count === 0;
+  const findings = a.findings.map((f) =>
+    `<li class="sev-${f.severity}"><code>${esc(f.code)}</code>${
+      f.line_number != null ? ` <span class="muted">L${f.line_number}</span>` : ""
+    } · ${esc(f.message)}</li>`).join("");
+  const obj = a.objective_value != null ? ` · obj ${a.objective_value.toFixed(2)}` : "";
   card.innerHTML = `
     <div class="card-head">
-      <span class="badge ${statusClass(a.blocking_count)}">Attempt ${a.number}</span>
-      <span class="muted">${a.blocking_count} blocking · ${a.findings.length} findings${obj}</span>
+      <span class="badge ${ok ? "good" : "bad"}">${ok ? "CLEAN" : a.blocking_count + " BLOCKING"}</span>
+      <span class="muted">${a.findings.length} finding(s)${obj}</span>
+      <span class="seq">ATTEMPT ${pad2(a.number)}</span>
     </div>
     <div class="card-body">
       <div class="col">
         <h4>Findings</h4>
-        <ul class="findings">${findings || "<li class='sev-info'>none</li>"}</ul>
-        <h4>Toolpath</h4>
-        <img class="toolpath" src="/api/runs/${currentRun}/plot/${a.number}" alt="toolpath"
-             onerror="this.style.display='none'" />
+        <ul class="findings">${findings || '<li class="sev-info">no findings</li>'}</ul>
+        <h4 style="margin-top:14px">Toolpath</h4>
+        <img class="toolpath" src="/api/runs/${currentRun}/plot/${a.number}" alt="toolpath" onerror="this.style.display='none'" />
       </div>
       <div class="col">
         <h4>G-code</h4>
-        <pre class="gcode">${escapeHtml(a.gcode)}</pre>
+        <pre class="gcode">${esc(a.gcode)}</pre>
       </div>
     </div>`;
 }
 
 function renderFinal(result) {
+  const ok = result.status.startsWith("passed") || result.status === "improved" || result.status === "accepted_vericut";
   const f = $("final");
-  f.classList.remove("hidden");
-  const ok =
-    result.status.startsWith("passed") ||
-    result.status === "improved" ||
-    result.status === "accepted_vericut";
-  const v = result.vericut
-    ? `<div>Vericut: <code>${escapeHtml(JSON.stringify(result.vericut.status || result.vericut))}</code></div>`
+  f.className = ok ? "ok" : "fail";
+  const ver = result.vericut
+    ? `<span>vericut <code>${esc(String(result.vericut.status || JSON.stringify(result.vericut)))}</code></span>`
     : "";
   f.innerHTML = `
-    <h3>Result: <span class="badge ${ok ? "good" : "bad"}">${escapeHtml(result.status)}</span></h3>
-    <div class="muted">operator action: <code>${escapeHtml(result.operator_action)}</code>
-      · best attempt: ${result.best_attempt_index ?? "—"}</div>
-    ${v}
+    <h3><span class="badge ${ok ? "good" : "bad"}">${esc(result.status.replace(/_/g, " ").toUpperCase())}</span></h3>
+    <div class="verdict-row">
+      <span>action <code>${esc(result.operator_action)}</code></span>
+      <span>best <code>attempt ${result.best_attempt_index ?? "—"}</code></span>
+      <span>mode <code>${esc(result.mode)}</code></span>
+      ${ver}
+    </div>
     <div class="actions">
-      <button id="accept">✓ Accept</button>
-      <button id="reject" class="ghost">✗ Reject</button>
+      <button id="accept" class="btn">✓ ACCEPT</button>
+      <button id="reject" class="btn ghost">✗ REJECT</button>
     </div>
     <div id="decision-msg" class="muted"></div>`;
   $("accept").addEventListener("click", () => decide("accept"));
@@ -110,21 +132,25 @@ function renderFinal(result) {
 async function decide(action) {
   try {
     await fetch(`/api/runs/${currentRun}/decision`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }),
     });
-    $("decision-msg").textContent = `Recorded: ${action}.`;
-  } catch (err) {
-    $("decision-msg").textContent = "Failed to record decision.";
-  }
+    $("decision-msg").textContent = `▸ recorded: ${action}`;
+  } catch (_) { $("decision-msg").textContent = "failed to record decision"; }
 }
 
+function finishRun() {
+  $("run-btn").disabled = false;
+  $("run-btn").classList.remove("running");
+  if (es) { es.close(); es = null; }
+}
+
+/* ---------- run ---------- */
 $("run-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (es) { es.close(); es = null; }
   $("attempts").innerHTML = "";
   $("final").classList.add("hidden");
+  $("placeholder").classList.add("hidden");
 
   const mode = $("mode").value;
   const payload = {
@@ -136,48 +162,72 @@ $("run-form").addEventListener("submit", async (e) => {
     registry_path: $("registry_path").value.trim() || null,
     setup_id: $("setup_id").value || null,
   };
+  if (payload.model_name === "OpenRouter") {
+    const orm = $("openrouter_model_name").value.trim();
+    if (orm) payload.openrouter_model_name = orm;
+  }
   if (mode !== "generate") payload.seed_gcode = $("seed_gcode").value;
   if (mode === "improve") payload.objective = { metric: $("objective").value };
 
-  banner("Starting run…", "running");
+  $("run-btn").disabled = true;
+  $("run-btn").classList.add("running");
+  $("rd-attempt").textContent = "00";
+  setStatus("DISPATCHING", "run");
+
   let runId;
   try {
     const res = await fetch("/api/runs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
     });
-    if (!res.ok) { const er = await res.json(); throw new Error(er.error || res.status); }
+    if (!res.ok) throw new Error((await res.json()).error || res.status);
     runId = (await res.json()).run_id;
   } catch (err) {
-    banner("Failed to start: " + err.message, "bad");
+    setStatus("START FAILED", "fail");
+    $("final").classList.remove("hidden");
+    $("final").innerHTML = `<h3><span class="badge bad">ERROR</span></h3><div class="verdict-row">${esc(err.message)}</div>`;
+    finishRun();
     return;
   }
   currentRun = runId;
+  $("final").classList.remove("hidden");
+  $("final").innerHTML = "";
+  $("final").classList.add("hidden");
 
   es = new EventSource(`/api/runs/${runId}/events`);
   es.addEventListener("attempt_started", (ev) => {
     const d = JSON.parse(ev.data);
-    banner(`Attempt ${d.payload.attempt} running…`, "running");
+    $("rd-attempt").textContent = pad2(d.payload.attempt);
+    setStatus("CUTTING", "run");
   });
   es.addEventListener("findings", (ev) => renderAttemptCard(JSON.parse(ev.data).attempt));
   es.addEventListener("best_updated", (ev) => {
     const a = JSON.parse(ev.data).attempt;
     document.querySelectorAll(".card").forEach((c) => c.classList.remove("best"));
-    const card = document.getElementById(`attempt-${a.number}`);
+    const card = $(`attempt-${a.number}`);
     if (card) card.classList.add("best");
   });
   es.addEventListener("error", (ev) => {
-    if (!ev.data) return; // native connection error (e.g. stream closed) — ignore
+    if (!ev.data) return; // native connection close — ignore
     try {
       const d = JSON.parse(ev.data);
-      banner("Run error: " + (d.payload && d.payload.message ? d.payload.message : ""), "bad");
+      setStatus("RUN ERROR", "fail");
+      $("final").classList.remove("hidden");
+      $("final").className = "fail";
+      $("final").innerHTML = `<h3><span class="badge bad">RUN ERROR</span></h3><div class="verdict-row">${esc(d.payload && d.payload.message || "")}</div>`;
+      finishRun();
     } catch (_) { /* ignore */ }
   });
   es.addEventListener("done", (ev) => {
     const d = JSON.parse(ev.data);
-    banner("Run complete.", "good");
+    const ok = d.result.status.startsWith("passed") || d.result.status === "improved" || d.result.status === "accepted_vericut";
+    setStatus(ok ? "COMPLETE" : "REVIEW", ok ? "pass" : "fail");
+    $("final").classList.remove("hidden");
     renderFinal(d.result);
-    if (es) { es.close(); es = null; }
+    finishRun();
   });
 });
+
+/* ---------- init ---------- */
+loadModels();
+syncMode();
+syncVericutHint();

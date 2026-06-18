@@ -103,6 +103,13 @@ class ApiTests(unittest.TestCase):
     def test_setups_missing_param_400(self):
         self.assertEqual(_client().get("/api/setups").status_code, 400)
 
+    def test_models(self):
+        r = _client().get("/api/models")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertIn("OpenRouter", body["models"])
+        self.assertEqual(body["default"], "OpenRouter")
+
     def test_decision(self):
         c = _client()
         run_id = c.post("/api/runs", json={"prompt": "p", "max_attempts": 4}).json()["run_id"]

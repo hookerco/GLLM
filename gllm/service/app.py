@@ -72,6 +72,12 @@ async def setups(request):
         return JSONResponse({"error": str(exc)}, status_code=400)
 
 
+async def models(request):
+    from gllm.utils.model_utils import DEFAULT_MODEL, MODEL_OPTIONS
+
+    return JSONResponse({"models": list(MODEL_OPTIONS), "default": DEFAULT_MODEL})
+
+
 async def create_run(request):
     payload = await request.json()
     try:
@@ -129,6 +135,7 @@ def create_app(run_manager: RunManager | None = None) -> Starlette:
     routes = [
         Route("/", index),
         Route("/api/setups", setups),
+        Route("/api/models", models),
         Route("/api/runs", create_run, methods=["POST"]),
         Route("/api/runs/{run_id}/events", run_events),
         Route("/api/runs/{run_id}", run_result),

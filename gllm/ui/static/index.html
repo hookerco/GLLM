@@ -3,68 +3,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GLLM — G-code Loop</title>
+  <title>GLLM · G-CODE LOOP CONTROL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-  <header>
-    <h1>GLLM <span>· generate / improve / repair g-code from a prompt</span></h1>
+  <div class="reg-mark tl"></div>
+  <div class="reg-mark tr"></div>
+  <div class="reg-mark bl"></div>
+  <div class="reg-mark br"></div>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <!-- HMI status bar -->
+  <header class="hmi-bar">
+    <div class="brand">
+      <span class="logo">GLLM</span>
+      <span class="sub">G-CODE&nbsp;LOOP&nbsp;CONTROL</span>
+    </div>
+    <div class="readouts">
+      <div class="readout"><span class="lbl">STATUS</span><span class="val" id="rd-status"><i class="led idle"></i>IDLE</span></div>
+      <div class="readout"><span class="lbl">MODE</span><span class="val" id="rd-mode">GENERATE</span></div>
+      <div class="readout"><span class="lbl">MODEL</span><span class="val" id="rd-model">—</span></div>
+      <div class="readout"><span class="lbl">ATTEMPT</span><span class="val" id="rd-attempt">00</span></div>
+    </div>
   </header>
+
   <main>
-    <section class="intake">
+    <!-- Control panel -->
+    <aside class="panel">
+      <div class="panel-tab">CONTROL&nbsp;PANEL</div>
       <form id="run-form">
-        <label>Prompt
-          <textarea id="prompt" rows="4" placeholder="Mill a 20mm square pocket, 5mm deep, in aluminum..."></textarea>
+        <label class="field">
+          <span class="field-lbl">PROMPT</span>
+          <textarea id="prompt" rows="4" placeholder="Mill a 20mm square pocket, 5mm deep, in 6061 aluminum…"></textarea>
         </label>
-        <div class="row">
-          <label>Mode
+
+        <div class="grid-2">
+          <label class="field">
+            <span class="field-lbl">MODE</span>
             <select id="mode">
-              <option value="generate">Generate</option>
-              <option value="repair">Repair</option>
-              <option value="improve">Improve</option>
+              <option value="generate">GENERATE</option>
+              <option value="repair">REPAIR</option>
+              <option value="improve">IMPROVE</option>
             </select>
           </label>
-          <label>Model
-            <select id="model">
-              <option value="OpenRouter">OpenRouter</option>
-              <option value="GPT-3.5">GPT-3.5</option>
-              <option value="Codex OAuth">Codex OAuth</option>
-            </select>
-          </label>
-          <label>Max attempts
+          <label class="field">
+            <span class="field-lbl">MAX&nbsp;ATTEMPTS</span>
             <input id="max_attempts" type="number" value="4" min="1" max="20" />
           </label>
         </div>
-        <div class="row">
-          <label>Setup registry (path)
-            <input id="registry_path" type="text" placeholder="config/vericut_setups.example.json" />
-          </label>
-          <label>Setup
-            <select id="setup_id"><option value="">— none (lint-only) —</option></select>
-          </label>
-          <button type="button" id="load-setups" class="ghost">Load setups</button>
-        </div>
-        <label id="seed-field" class="hidden">Existing G-code (seed)
-          <textarea id="seed_gcode" rows="6" placeholder="Paste the program to repair / improve..."></textarea>
+
+        <label class="field">
+          <span class="field-lbl">MODEL</span>
+          <select id="model"></select>
         </label>
-        <label id="objective-field" class="hidden">Objective (improve)
+        <label class="field hidden" id="orm-field">
+          <span class="field-lbl">OPENROUTER&nbsp;MODEL <span class="hint">optional · e.g. anthropic/claude-3.5-sonnet</span></span>
+          <input id="openrouter_model_name" type="text" placeholder="provider/model — blank = account default" />
+        </label>
+
+        <label class="field hidden" id="seed-field">
+          <span class="field-lbl">EXISTING&nbsp;G-CODE <span class="hint">seed to repair / improve</span></span>
+          <textarea id="seed_gcode" rows="6" placeholder="N10 G21 G90&#10;…"></textarea>
+        </label>
+        <label class="field hidden" id="objective-field">
+          <span class="field-lbl">OPTIMIZE&nbsp;FOR</span>
           <select id="objective">
-            <option value="path_length">Minimize path length</option>
-            <option value="tool_changes">Minimize tool changes</option>
+            <option value="path_length">PATH LENGTH ↓</option>
+            <option value="tool_changes">TOOL CHANGES ↓</option>
           </select>
         </label>
-        <div class="row actions-row">
-          <label class="check"><input type="checkbox" id="run_vericut" /> Run Vericut final gate</label>
-          <button type="submit" id="run-btn">▶ Run</button>
+
+        <div class="field-group">
+          <span class="field-lbl">MACHINE&nbsp;SETUP</span>
+          <div class="grid-2">
+            <input id="registry_path" type="text" placeholder="config/vericut_setups.example.json" />
+            <button type="button" id="load-setups" class="btn ghost">LOAD ▸</button>
+          </div>
+          <select id="setup_id"><option value="">— NONE · lint-only —</option></select>
         </div>
+
+        <label class="toggle" id="vericut-toggle">
+          <input type="checkbox" id="run_vericut" />
+          <span class="switch"></span>
+          <span class="toggle-txt">VERICUT&nbsp;FINAL&nbsp;GATE<span class="hint" id="vericut-hint">requires a machine setup</span></span>
+        </label>
+
+        <button type="submit" id="run-btn" class="btn run">
+          <span class="run-stripes"></span>
+          <span class="run-label">▶ RUN&nbsp;LOOP</span>
+        </button>
       </form>
-    </section>
-    <section class="results">
-      <div id="status-banner" class="hidden"></div>
+    </aside>
+
+    <!-- Live output -->
+    <section class="output">
+      <div id="placeholder" class="placeholder">
+        <div class="ph-mark"></div>
+        <p>AWAITING&nbsp;JOB</p>
+        <span>Configure a prompt and run the loop. Attempts stream here as the machine cuts.</span>
+      </div>
       <div id="attempts"></div>
       <div id="final" class="hidden"></div>
     </section>
   </main>
+
   <script src="/static/app.js"></script>
 </body>
 </html>
