@@ -227,3 +227,13 @@ img.toolpath { max-width: 100%; border: 1px solid var(--edge); border-radius: 6p
 #final .actions .btn { font-size: 14px; padding: 10px 22px; }
 #accept { background: var(--phos); color: #04130c; border-color: var(--phos); font-weight: 700; }
 #decision-msg { margin-top: 10px; }
+
+/* vericut verdict detail */
+.badge.warn { color: var(--warn); border-color: #6b5410; background: rgba(255,206,71,0.08); }
+.vericut-panel { margin: 14px 0 4px; padding: 13px 14px; border-radius: 8px; border: 1px solid var(--edge); background: var(--bg); }
+.vericut-panel.bad { border-color: var(--hazard-dim); }
+.vericut-panel.good { border-color: var(--phos-dim); }
+.vericut-panel.warn { border-color: #6b5410; }
+.vericut-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.vericut-findings { max-height: 260px; overflow: auto; }
+.vericut-findings li code { color: var(--amber); }

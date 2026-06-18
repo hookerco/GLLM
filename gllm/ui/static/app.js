@@ -105,21 +105,47 @@ function renderAttemptCard(a) {
     </div>`;
 }
 
+function vericutPanel(v) {
+  if (!v) return "";
+  const map = {
+    vericut_accepted: ["ACCEPTED", "good"],
+    vericut_rejected: ["REJECTED — simulation found collisions / errors", "bad"],
+    vericut_unverified: ["UNVERIFIED — ran but produced no log", "warn"],
+    vericut_unavailable: ["UNAVAILABLE — Vericut could not run", "warn"],
+  };
+  const [label, cls] = map[v.status] || [String(v.status || "").toUpperCase(), "warn"];
+  const log = v.vericut || {};
+  const findings = (log.findings && log.findings.length) ? log.findings : (v.repair_context || []);
+  const stats = [];
+  if (log.error_count != null) stats.push(`${log.error_count} error(s)`);
+  if (log.warning_count != null) stats.push(`${log.warning_count} warning(s)`);
+  if (log.cycle_time) stats.push(`cycle ${log.cycle_time}`);
+  if (v.process_returncode != null) stats.push(`exit ${v.process_returncode}`);
+  const items = findings.slice(0, 12).map((fd) =>
+    `<li class="sev-${esc(fd.severity || "error")}"><code>L${fd.line_number ?? "—"}</code> ${esc(fd.message || "")}</li>`).join("");
+  const more = findings.length > 12 ? `<li class="muted">…and ${findings.length - 12} more</li>` : "";
+  return `
+    <div class="vericut-panel ${cls}">
+      <div class="vericut-head">
+        <span class="badge ${cls}">VERICUT · ${esc(label)}</span>
+        <span class="muted">${esc(stats.join("  ·  "))}</span>
+      </div>
+      ${items ? `<ul class="findings vericut-findings">${items}${more}</ul>` : ""}
+    </div>`;
+}
+
 function renderFinal(result) {
   const ok = result.status.startsWith("passed") || result.status === "improved" || result.status === "accepted_vericut";
   const f = $("final");
   f.className = ok ? "ok" : "fail";
-  const ver = result.vericut
-    ? `<span>vericut <code>${esc(String(result.vericut.status || JSON.stringify(result.vericut)))}</code></span>`
-    : "";
   f.innerHTML = `
     <h3><span class="badge ${ok ? "good" : "bad"}">${esc(result.status.replace(/_/g, " ").toUpperCase())}</span></h3>
     <div class="verdict-row">
       <span>action <code>${esc(result.operator_action)}</code></span>
       <span>best <code>attempt ${result.best_attempt_index ?? "—"}</code></span>
       <span>mode <code>${esc(result.mode)}</code></span>
-      ${ver}
     </div>
+    ${vericutPanel(result.vericut)}
     <div class="actions">
       <button id="accept" class="btn">✓ ACCEPT</button>
       <button id="reject" class="btn ghost">✗ REJECT</button>
@@ -206,6 +232,7 @@ $("run-form").addEventListener("submit", async (e) => {
     const card = $(`attempt-${a.number}`);
     if (card) card.classList.add("best");
   });
+  es.addEventListener("vericut_started", () => setStatus("VERICUT SIM", "run"));
   es.addEventListener("error", (ev) => {
     if (!ev.data) return; // native connection close — ignore
     try {
