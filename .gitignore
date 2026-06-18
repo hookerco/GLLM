@@ -23,6 +23,14 @@ env/
 # Codex/local run artifacts
 .codex-log/
 codex-output.md
+.loop-runs/
+.proof-runs/
+.proof-test-tmp/
+.vericut-runs/
+vericut-runs/
+vericut.log
+hs_err_pid*.log
+rms.trace.log.txt
 
 # User-specific stuff
 .idea/**/workspace.xml
