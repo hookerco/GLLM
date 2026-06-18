@@ -91,7 +91,10 @@ def generate_gcode_with_langchain(chain, user_inputs):
 
 def clean_gcode(gcode):
     gcode_response = gcode.content if isinstance(gcode, AIMessage) else str(gcode)
-    gcode_pattern = re.compile(r"^(?:G|M|T|F|S|X|Y|Z|I|J|K|R|P|Q)\d+.*")
+    gcode_pattern = re.compile(
+        r"^(?:N\d+\s*)?(?:G|M|T|F|S|X|Y|Z|I|J|K|R|P|Q|H|D|L)\s*[-+]?(?:\d|\.).*",
+        re.IGNORECASE,
+    )
     cleaned_lines = [line.strip() for line in gcode_response.split('\n') if gcode_pattern.match(line)]
     return '\n'.join(cleaned_lines)
 
