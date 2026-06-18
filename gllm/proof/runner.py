@@ -561,3 +561,32 @@ def _packet_summary(packet: EvidencePacket) -> str:
         lines.extend(["", "## Repair Context"])
         lines.extend(_format_repair_context(packet.repair_context).splitlines())
     return "\n".join(lines) + "\n"
+
+
+def run_proof_with_llm(
+    request: ScenarioRequest,
+    *,
+    chain=None,
+    model_name: str | None = None,
+    openrouter_model_name: str | None = None,
+    run_vericut_fn: RunVericutFn = run_vericut,
+) -> EvidencePacket:
+    """Drive run_proof_scenario with a real LLM candidate generator and the
+    existing build_repair_prompt builder. Pass `chain` to inject a fake in tests."""
+    from gllm.loop.generator import LLMCandidateGenerator
+
+    generator = LLMCandidateGenerator(
+        model_name=model_name or request.model_name or "OpenRouter",
+        openrouter_model_name=openrouter_model_name or request.openrouter_model_name,
+        chain=chain,
+    )
+
+    def candidate_generator(prompt: str, context: "AttemptContext") -> str:
+        return generator(prompt, context)
+
+    return run_proof_scenario(
+        request,
+        candidate_generator=candidate_generator,
+        repair_prompt_builder=build_repair_prompt,
+        run_vericut_fn=run_vericut_fn,
+    )
