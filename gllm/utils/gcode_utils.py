@@ -221,8 +221,11 @@ def validate_z_levels(gcode_string, max_depth):
     lines = gcode_string.strip().split('\n')
     for line_text in lines:
         line = pygcode.Line(line_text)
-        if 'Z' in line.block.gcodes[0].params:
-            z_level = line.block.gcodes[0].params['Z']
+        if not line.block.gcodes:
+            continue
+        params = line.block.gcodes[0].params
+        if 'Z' in params:
+            z_level = params['Z']
             if z_level > max_depth:
                 error_msg = f"Z-level exceeds maximum depth at {line_text}"
                 print(error_msg)
@@ -239,14 +242,14 @@ def validate_functional_correctness(gcode_string, parameters_string):
 
     gcode_tool_path = [(x,y) for x, y in zip(x_points, y_points)]
 
-    user_defined_parameters = parse_extracted_parameters(parameter_string=parameters_string)
+    try:
+        user_defined_parameters = parse_extracted_parameters(parameter_string=parameters_string)
 
-    if user_defined_parameters is not None:
-         
-        user_defined_start_point = user_defined_parameters['starting_point']
-        tool_path = user_defined_parameters['tool_path']
- 
-        try:
+        if user_defined_parameters is not None:
+
+            user_defined_start_point = user_defined_parameters['starting_point']
+            tool_path = user_defined_parameters['tool_path']
+
             # Plot tool path
             x_path, y_path, _ = zip(*tool_path)  # Ignore z-coordinates for 2D plot
 
@@ -283,10 +286,10 @@ def validate_functional_correctness(gcode_string, parameters_string):
                 print(f"INFO: Tool paths do not match. Hausdorff distance: {distance:.4f}")
                 error_msg = f"The tool path extracted from the generated G-code ({gcode_tool_path}) does not reflect the specification defined by the user {user_defined_tool_path}."
                 return False, error_msg
-        
-        except:
-            print("Unsupported machine operation")
-            return True, None
+
+    except Exception as exc:
+        print(f"Could not verify functional correctness: {exc}")
+        return False, f"Could not verify tool path against specification (unsupported operation): {exc}"
 
     return True, None
 
@@ -349,7 +352,7 @@ def check_tool_offsets(gcode_string):
             tool_offset_active = True
         elif 'G49' in line_text:  # Tool length offset compensation cancel
             tool_offset_active = False
-        elif tool_offset_active and 'Z' in line.block.gcodes[0].params:
+        elif tool_offset_active and line.block.gcodes and 'Z' in line.block.gcodes[0].params:
             error_msg = f"Z movement with active tool offset in line: {line_text}"
             print(error_msg)
             return False, error_msg
