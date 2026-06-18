@@ -52,6 +52,10 @@ def derive_status(best: Attempt | None, mode: Mode, vericut: dict | None) -> str
     if mode == Mode.IMPROVE:
         return "improved" if best.number > 1 else "not_improved"
     if vericut is not None:
+        if vericut.get("status") == "vericut_unavailable":
+            # Vericut was requested and the candidate passed static gates, but the
+            # final gate could not run. Static-clean but unverified by simulation.
+            return "passed_vericut_unavailable"
         if vericut.get("passed") is True:
             return "accepted_vericut"
         if vericut.get("status") == "vericut_unverified":
@@ -137,7 +141,11 @@ class LoopController:
             and not best.blocking_findings
         ):
             yield LoopEvent("vericut_started")
-            vericut = self._final_gate(best.gcode, ctx, request)
+            verdict = self._final_gate(best.gcode, ctx, request)
+            # A None verdict means the gate was invoked but Vericut could not run
+            # (no setup, missing assets/license, missing deps). Record that explicitly
+            # so it is distinguishable from "Vericut was never requested".
+            vericut = verdict if verdict is not None else {"status": "vericut_unavailable"}
             yield LoopEvent("vericut_verdict", payload=vericut)
 
         status = derive_status(best, request.mode, vericut)

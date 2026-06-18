@@ -6,6 +6,7 @@ from gllm.loop.types import Attempt, LoopResult, Mode
 _ACTION_OVERRIDES = {
     "passed": "ready_to_review",
     "passed_with_warnings": "ready_to_review",
+    "passed_vericut_unavailable": "rerun_vericut",
     "improved": "ready_to_review",
     "not_improved": "ready_to_review",
     "exhausted_best_effort": "fix_prompt",

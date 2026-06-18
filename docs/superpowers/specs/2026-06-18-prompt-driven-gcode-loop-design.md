@@ -202,7 +202,9 @@ def stream(req: LoopRequest) -> Iterator[LoopEvent]:
 **Status taxonomy** (extends existing strings so `operator_action_for_status` keeps
 working): `passed` · `passed_with_warnings` · `improved` / `not_improved` ·
 `exhausted_best_effort` (new — the cap/budget/no-improve case the current code hits as
-a *silent* break) · `failed` · plus existing Vericut suffixes.
+a *silent* break) · `passed_vericut_unavailable` (static-clean, but the requested Vericut
+final gate could not run — distinct from "Vericut not requested"; maps to `rerun_vericut`)
+· `failed` · plus existing Vericut suffixes.
 
 **Stop criteria** are all explicit: converged · max_attempts · patience · budget. No
 more flat-50 or silent break.
