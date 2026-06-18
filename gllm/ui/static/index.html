@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GLLM — G-code Loop</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>GLLM <span>· generate / improve / repair g-code from a prompt</span></h1>
+  </header>
+  <main>
+    <section class="intake">
+      <form id="run-form">
+        <label>Prompt
+          <textarea id="prompt" rows="4" placeholder="Mill a 20mm square pocket, 5mm deep, in aluminum..."></textarea>
+        </label>
+        <div class="row">
+          <label>Mode
+            <select id="mode">
+              <option value="generate">Generate</option>
+              <option value="repair">Repair</option>
+              <option value="improve">Improve</option>
+            </select>
+          </label>
+          <label>Model
+            <select id="model">
+              <option value="OpenRouter">OpenRouter</option>
+              <option value="GPT-3.5">GPT-3.5</option>
+              <option value="Codex OAuth">Codex OAuth</option>
+            </select>
+          </label>
+          <label>Max attempts
+            <input id="max_attempts" type="number" value="4" min="1" max="20" />
+          </label>
+        </div>
+        <div class="row">
+          <label>Setup registry (path)
+            <input id="registry_path" type="text" placeholder="config/vericut_setups.example.json" />
+          </label>
+          <label>Setup
+            <select id="setup_id"><option value="">— none (lint-only) —</option></select>
+          </label>
+          <button type="button" id="load-setups" class="ghost">Load setups</button>
+        </div>
+        <label id="seed-field" class="hidden">Existing G-code (seed)
+          <textarea id="seed_gcode" rows="6" placeholder="Paste the program to repair / improve..."></textarea>
+        </label>
+        <label id="objective-field" class="hidden">Objective (improve)
+          <select id="objective">
+            <option value="path_length">Minimize path length</option>
+            <option value="tool_changes">Minimize tool changes</option>
+          </select>
+        </label>
+        <div class="row actions-row">
+          <label class="check"><input type="checkbox" id="run_vericut" /> Run Vericut final gate</label>
+          <button type="submit" id="run-btn">▶ Run</button>
+        </div>
+      </form>
+    </section>
+    <section class="results">
+      <div id="status-banner" class="hidden"></div>
+      <div id="attempts"></div>
+      <div id="final" class="hidden"></div>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
