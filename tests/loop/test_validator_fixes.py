@@ -44,6 +44,22 @@ class ValidatorFixTests(unittest.TestCase):
         ok, _ = result
         self.assertIsInstance(ok, bool)
 
+    def test_safety_flags_lateral_rapid_while_cutting(self):
+        from gllm.utils.gcode_utils import validate_safety
+        ok, msg = validate_safety("G1 X1 Y1 F50\nG0 X5 Y5\nM30")
+        self.assertFalse(ok)
+        self.assertIsNotNone(msg)
+
+    def test_safety_allows_z_only_retract_after_cut(self):
+        from gllm.utils.gcode_utils import validate_safety
+        ok, _ = validate_safety("G1 X1 Y1 F50\nG0 Z5.0\nG0 X9 Y9\nM30")
+        self.assertTrue(ok)
+
+    def test_safety_passes_clean_program(self):
+        from gllm.utils.gcode_utils import validate_safety
+        ok, _ = validate_safety("G90\nT1 M06\nS800\nG0 Z1.0\nG1 Z-0.1 F50\nM30")
+        self.assertTrue(ok)
+
 
 if __name__ == "__main__":
     unittest.main()

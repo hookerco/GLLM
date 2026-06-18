@@ -141,19 +141,29 @@ def validate_unreachable_code(gcode_string):
     return True, None 
 
 def validate_safety(gcode_string):
-    """Ensuring that rapid movements do not pass through the material"""
+    """Ensuring that rapid movements do not pass through the material.
+
+    Flags a rapid (G0) move that travels in X/Y while the tool is engaged in a
+    cut (after a G1 feed move and before it has been retracted in Z). A rapid
+    that only moves in Z is treated as a retract: it clears the cutting state
+    and is not flagged.
+    """
     is_cutting = False
     for line_text in gcode_string.strip().split('\n'):
-        if 'G1' in line_text or 'G01' in line_text:
-            is_cutting = True
-        if ('G0 ' in line_text or 'G00' in line_text) and is_cutting:
+        is_feed = 'G1 ' in line_text or 'G01' in line_text
+        is_rapid = 'G0 ' in line_text or 'G00' in line_text
+        moves_xy = 'X' in line_text or 'Y' in line_text
+        moves_z = 'Z' in line_text
+        if is_rapid and is_cutting and moves_xy:
             error_msg = f"Warning: Rapid movement through potential material at {line_text}"
             print(error_msg)
             return False, error_msg
-        if is_cutting:
-            is_cutting = False
+        if is_rapid and moves_z and not moves_xy:
+            is_cutting = False  # pure-Z rapid = retract; tool no longer in material
+        if is_feed:
+            is_cutting = True
         print(f"Processed: {line_text}")
-    
+
     return True, None
 
 def validate_continuity(gcode_string):
