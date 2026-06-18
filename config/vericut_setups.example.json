@@ -1,0 +1,92 @@
+{
+  "setups": [
+    {
+      "id": "vericut96_haas_minimill_sample",
+      "description": "Vericut 9.6 sample Haas MiniMill project. Use this as a local smoke-test setup before registering real shop machines.",
+      "vericut_bat": "C:\\Program Files\\CGTech\\Vericut 9.6\\windows64\\commands\\vericut.bat",
+      "project_template": "C:\\Program Files\\CGTech\\Vericut 9.6\\samples\\Haas\\haas_minimill.vcproject",
+      "library_search_paths": [
+        "C:\\Program Files\\CGTech\\Vericut 9.6\\samples\\Haas",
+        "C:\\Program Files\\CGTech\\Vericut 9.6\\samples\\Support_files",
+        "C:\\Program Files\\CGTech\\Vericut 9.6\\samples\\TLS",
+        "C:\\Program Files\\CGTech\\Vericut 9.6\\library"
+      ],
+      "allowed_tools": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T7"
+      ],
+      "required_modes": [
+        "G90"
+      ],
+      "expected_units": "inch",
+      "feed_rate_min": 1.0,
+      "feed_rate_max": 300.0,
+      "spindle_speed_min": 1.0,
+      "spindle_speed_max": 10000.0,
+      "work_envelope": {
+        "x_min": -100.0,
+        "x_max": 100.0,
+        "y_min": -100.0,
+        "y_max": 100.0,
+        "z_min": -10.0,
+        "z_max": 100.0
+      },
+      "safe_z_min": 0.0
+    },
+    {
+      "id": "vericut96_haas_vf3_pocket_cycle_sample",
+      "description": "Vericut 9.6 Haas VF3 pocket-cycle sample project. Use this as a second setup to prove the registry abstraction.",
+      "vericut_bat": "C:\\Program Files\\CGTech\\Vericut 9.6\\windows64\\commands\\vericut.bat",
+      "project_template": "C:\\Program Files\\CGTech\\Vericut 9.6\\samples\\Haas\\g150_pocket_cycle_haas_vf3_tc20_hascnc_inch.vcproject",
+      "library_search_paths": [
+        "C:\\Program Files\\CGTech\\Vericut 9.6\\samples\\Haas",
+        "C:\\Program Files\\CGTech\\Vericut 9.6\\samples\\Support_files",
+        "C:\\Program Files\\CGTech\\Vericut 9.6\\samples\\TLS",
+        "C:\\Program Files\\CGTech\\Vericut 9.6\\library"
+      ],
+      "allowed_tools": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ],
+      "required_modes": [
+        "G90"
+      ],
+      "expected_units": "inch",
+      "feed_rate_min": 1.0,
+      "feed_rate_max": 400.0,
+      "spindle_speed_min": 1.0,
+      "spindle_speed_max": 12000.0,
+      "work_envelope": {
+        "x_min": -200.0,
+        "x_max": 200.0,
+        "y_min": -200.0,
+        "y_max": 200.0,
+        "z_min": -20.0,
+        "z_max": 200.0
+      },
+      "safe_z_min": 0.0
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "name": "Vericut 9.6 Haas sample prompt corpus",
+  "scenarios": [
+    {
+      "id": "haas-minimill-safe-noop-pass",
+      "setup_id": "vericut96_haas_minimill_sample",
+      "prompt": "Run a safe no-op Haas MiniMill program to prove the live acceptance branch.",
+      "candidate_gcode_file": "../tests/fixtures/haas_minimill_safe_noop.nc",
+      "expected_status": "accepted_static_only",
+      "tags": ["control", "live_vericut_candidate", "noop"]
+    },
+    {
+      "id": "haas-minimill-sample-control-pass",
+      "setup_id": "vericut96_haas_minimill_sample",
+      "prompt": "Run the shipped Haas MiniMill sample control program with explicit inch units.",
+      "candidate_gcode_file": "../tests/fixtures/haas_minimill_sample_control.nc",
+      "expected_status": "accepted_static_only",
+      "tags": ["control", "sample_program"]
+    },
+    {
+      "id": "haas-minimill-square-pocket-pass",
+      "setup_id": "vericut96_haas_minimill_sample",
+      "prompt": "Mill a one inch square pocket on the Haas MiniMill sample setup.",
+      "candidate_gcode_file": "../tests/fixtures/haas_minimill_square_pocket.nc",
+      "expected_status": "accepted_static_only",
+      "tags": ["easy_pass", "square_pocket"]
+    },
+    {
+      "id": "haas-minimill-missing-units",
+      "setup_id": "vericut96_haas_minimill_sample",
+      "prompt": "Generate a square pocket but omit the units mode.",
+      "candidate_gcode_file": "../tests/fixtures/haas_minimill_missing_units.nc",
+      "expected_status": "rejected_static",
+      "tags": ["missing_mode", "expected_units"]
+    },
+    {
+      "id": "haas-minimill-bad-tool",
+      "setup_id": "vericut96_haas_minimill_sample",
+      "prompt": "Generate a square pocket using an unsupported tool.",
+      "candidate_gcode_file": "../tests/fixtures/haas_minimill_bad_tool.nc",
+      "expected_status": "rejected_static",
+      "tags": ["bad_tool"]
+    },
+    {
+      "id": "haas-minimill-unsafe-rapid",
+      "setup_id": "vericut96_haas_minimill_sample",
+      "prompt": "Generate a square pocket with an unsafe rapid Z move.",
+      "candidate_gcode_file": "../tests/fixtures/haas_minimill_unsafe_rapid.nc",
+      "expected_status": "rejected_static",
+      "tags": ["unsafe_rapid"]
+    },
+    {
+      "id": "haas-minimill-out-of-envelope",
+      "setup_id": "vericut96_haas_minimill_sample",
+      "prompt": "Generate a pocket outside the declared machine envelope.",
+      "candidate_gcode_file": "../tests/fixtures/haas_minimill_out_of_envelope.nc",
+      "expected_status": "rejected_static",
+      "tags": ["impossible_geometry", "work_envelope"]
+    },
+    {
+      "id": "haas-minimill-two-pockets-pass",
+      "setup_id": "vericut96_haas_minimill_sample",
+      "prompt": "Mill two small square pockets in one setup.",
+      "candidate_gcode_file": "../tests/fixtures/haas_minimill_two_pockets.nc",
+      "expected_status": "accepted_static_only",
+      "tags": ["multi_shape"]
+    },
+    {
+      "id": "haas-vf3-drill-pattern-pass",
+      "setup_id": "vericut96_haas_vf3_pocket_cycle_sample",
+      "prompt": "Drill a four hole pattern on the Haas VF3 sample setup.",
+      "candidate_gcode_file": "../tests/fixtures/haas_vf3_drill_pattern.nc",
+      "expected_status": "accepted_static_only",
+      "tags": ["second_setup", "drill_pattern"]
+    }
+  ]
+}
