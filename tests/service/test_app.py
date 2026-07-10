@@ -69,6 +69,12 @@ class BuildLoopRequestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_loop_request({"prompt": "p", "mode": "bogus"})
 
+    def test_vericut_max_rounds_from_payload(self):
+        self.assertEqual(build_loop_request({"prompt": "p"}).vericut_max_rounds, 2)
+        self.assertEqual(
+            build_loop_request({"prompt": "p", "vericut_max_rounds": 0}).vericut_max_rounds, 0
+        )
+
 
 class ApiTests(unittest.TestCase):
     def test_create_run_and_get_result(self):

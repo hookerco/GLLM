@@ -86,6 +86,7 @@ class LoopRequest:
     openrouter_model_name: str | None = None
     run_vericut: bool = False
     max_attempts: int = 4
+    vericut_max_rounds: int = 2
     token_budget: int | None = None
     patience: int = 2
     output_root: str | Path = ".loop-runs"

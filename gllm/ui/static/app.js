@@ -3,6 +3,7 @@
 const $ = (id) => document.getElementById(id);
 let currentRun = null;
 let es = null;
+let lastSimAttempt = null;  // attempt number the next vericut_verdict belongs to
 
 const esc = (s) => (s || "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -29,9 +30,13 @@ function syncVericutHint() {
     ? "will simulate the selected setup"
     : "requires a machine setup — skipped otherwise";
 }
+function syncVericut() {
+  $("vericut-rounds-field").classList.toggle("hidden", !$("run_vericut").checked);
+}
 $("mode").addEventListener("change", syncMode);
 $("model").addEventListener("change", syncModel);
 $("setup_id").addEventListener("change", syncVericutHint);
+$("run_vericut").addEventListener("change", syncVericut);
 
 async function loadModels() {
   try {
@@ -142,7 +147,7 @@ function renderFinal(result) {
     <h3><span class="badge ${ok ? "good" : "bad"}">${esc(result.status.replace(/_/g, " ").toUpperCase())}</span></h3>
     <div class="verdict-row">
       <span>action <code>${esc(result.operator_action)}</code></span>
-      <span>best <code>attempt ${result.best_attempt_index ?? "—"}</code></span>
+      <span>best <code>attempt ${result.best_attempt_index ?? "—"}</code> of ${result.attempts ? result.attempts.length : "—"}</span>
       <span>mode <code>${esc(result.mode)}</code></span>
     </div>
     ${vericutPanel(result.vericut)}
@@ -174,6 +179,7 @@ function finishRun() {
 $("run-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (es) { es.close(); es = null; }
+  lastSimAttempt = null;
   $("attempts").innerHTML = "";
   $("final").classList.add("hidden");
   $("placeholder").classList.add("hidden");
@@ -185,6 +191,7 @@ $("run-form").addEventListener("submit", async (e) => {
     model_name: $("model").value,
     max_attempts: parseInt($("max_attempts").value, 10),
     run_vericut: $("run_vericut").checked,
+    vericut_max_rounds: parseInt($("vericut_max_rounds").value, 10),
     registry_path: $("registry_path").value.trim() || null,
     setup_id: $("setup_id").value || null,
   };
@@ -225,7 +232,11 @@ $("run-form").addEventListener("submit", async (e) => {
     $("rd-attempt").textContent = pad2(d.payload.attempt);
     setStatus("CUTTING", "run");
   });
-  es.addEventListener("findings", (ev) => renderAttemptCard(JSON.parse(ev.data).attempt));
+  es.addEventListener("findings", (ev) => {
+    const a = JSON.parse(ev.data).attempt;
+    lastSimAttempt = a.number;  // the gate, if it runs, simulates this candidate next
+    renderAttemptCard(a);
+  });
   es.addEventListener("best_updated", (ev) => {
     const a = JSON.parse(ev.data).attempt;
     document.querySelectorAll(".card").forEach((c) => c.classList.remove("best"));
@@ -233,6 +244,19 @@ $("run-form").addEventListener("submit", async (e) => {
     if (card) card.classList.add("best");
   });
   es.addEventListener("vericut_started", () => setStatus("VERICUT SIM", "run"));
+  es.addEventListener("vericut_verdict", (ev) => {
+    const v = JSON.parse(ev.data).payload;
+    if (!v || lastSimAttempt == null) return;
+    const card = $(`attempt-${lastSimAttempt}`);
+    if (!card) return;
+    let slot = card.querySelector(".attempt-vericut");
+    if (!slot) {
+      slot = document.createElement("div");
+      slot.className = "attempt-vericut";
+      card.appendChild(slot);
+    }
+    slot.innerHTML = vericutPanel(v);
+  });
   es.addEventListener("error", (ev) => {
     if (!ev.data) return; // native connection close — ignore
     try {
@@ -258,3 +282,4 @@ $("run-form").addEventListener("submit", async (e) => {
 loadModels();
 syncMode();
 syncVericutHint();
+syncVericut();

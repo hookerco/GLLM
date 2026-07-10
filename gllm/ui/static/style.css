@@ -231,6 +231,8 @@ img.toolpath { max-width: 100%; border: 1px solid var(--edge); border-radius: 6p
 /* vericut verdict detail */
 .badge.warn { color: var(--warn); border-color: #6b5410; background: rgba(255,206,71,0.08); }
 .vericut-panel { margin: 14px 0 4px; padding: 13px 14px; border-radius: 8px; border: 1px solid var(--edge); background: var(--bg); }
+.attempt-vericut { padding: 0 15px 13px; }
+.attempt-vericut .vericut-panel { margin: 0; }
 .vericut-panel.bad { border-color: var(--hazard-dim); }
 .vericut-panel.good { border-color: var(--phos-dim); }
 .vericut-panel.warn { border-color: #6b5410; }

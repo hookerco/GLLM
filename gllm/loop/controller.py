@@ -4,7 +4,7 @@ import uuid
 from typing import Callable, Iterator, Sequence
 
 from gllm.loop.constraints import setup_constraints
-from gllm.loop.findings import Finding
+from gllm.loop.findings import Finding, from_vericut
 from gllm.loop.generator import (
     build_generate_prompt, build_improve_prompt, build_repair_prompt,
 )
@@ -35,6 +35,23 @@ def pick_best(best: Attempt | None, candidate: Attempt, mode: Mode, objective: O
             return candidate if cv < bv else best
         return candidate if candidate.score < best.score else best
     return candidate if candidate.score < best.score else best
+
+
+def _vericut_error_count(verdict: dict) -> int:
+    vericut = verdict.get("vericut") or {}
+    count = vericut.get("error_count")
+    return count if isinstance(count, int) else 0
+
+
+def _pick_best_vericut(best: tuple, candidate: tuple) -> tuple:
+    """Choose the better (Attempt, verdict) pair across Vericut repair rounds:
+    an accepted verdict beats a non-accepted one; among rejected, fewer Vericut
+    errors wins; ties keep the later (candidate) pair."""
+    if candidate[1].get("passed") is True:
+        return candidate
+    if best[1].get("passed") is True:
+        return best
+    return candidate if _vericut_error_count(candidate[1]) <= _vericut_error_count(best[1]) else best
 
 
 def converged(attempt: Attempt, mode: Mode) -> bool:
@@ -148,6 +165,12 @@ class LoopController:
             vericut = verdict if verdict is not None else {"status": "vericut_unavailable"}
             yield LoopEvent("vericut_verdict", payload=vericut)
 
+            # A toolpath rejection carries concrete findings; feed them back and
+            # re-simulate, up to a bounded number of rounds (or until accepted/budget).
+            best, vericut = yield from self._repair_after_vericut(
+                request, ctx, constraints, best, vericut, history, budget
+            )
+
         status = derive_status(best, request.mode, vericut)
         result = LoopResult(
             request=request,
@@ -158,6 +181,56 @@ class LoopController:
             vericut=vericut,
         )
         yield LoopEvent("done", result=result)
+
+    def _repair_after_vericut(self, request, ctx, constraints, best, verdict, history, budget):
+        """Run up to ``vericut_max_rounds`` repair rounds on a Vericut rejection.
+
+        Each round feeds the reported Vericut findings (plus any static findings a
+        prior repaired candidate regressed on) into a fresh candidate, re-validates it
+        statically, and re-simulates it only when it is statically clean. Yields the
+        per-round LoopEvents and returns the best ``(Attempt, verdict)`` pair seen."""
+        best_pair = (best, verdict)
+        current_gcode = best.gcode
+        carried_static: list[Finding] = []
+        rounds = 0
+        while (
+            verdict.get("status") == "vericut_rejected"
+            and rounds < request.vericut_max_rounds
+            and not budget.exhausted()
+        ):
+            rounds += 1
+            vfindings = [from_vericut(p) for p in verdict.get("repair_context", [])]
+            prompt = build_repair_prompt(request, current_gcode, vfindings + carried_static, constraints)
+            yield LoopEvent("repair_prompt", prompt=prompt)
+            candidate = self._generator(prompt, ctx)
+            budget.add(self._generator.last_usage)
+
+            cleaned = clean_gcode(candidate)
+            findings = self._validate(cleaned, ctx)
+            attempt = Attempt(
+                len(history) + 1,
+                cleaned,
+                tuple(findings),
+                findings_penalty(findings),
+                objective_value(cleaned, request.objective),
+            )
+            history.append(attempt)
+            yield LoopEvent("findings", attempt=attempt)
+            current_gcode = attempt.gcode
+
+            if attempt.blocking_findings:
+                # The repaired candidate regressed on the static gates. Don't spend a
+                # Vericut run on it; carry its findings into the next repair prompt.
+                carried_static = list(attempt.findings)
+                continue
+
+            carried_static = []
+            yield LoopEvent("vericut_started")
+            verdict = self._final_gate(attempt.gcode, ctx, request) or {"status": "vericut_unavailable"}
+            yield LoopEvent("vericut_verdict", payload=verdict)
+            best_pair = _pick_best_vericut(best_pair, (attempt, verdict))
+
+        return best_pair
 
     def _validate(self, gcode: str, ctx: ValidationContext) -> list[Finding]:
         findings: list[Finding] = []

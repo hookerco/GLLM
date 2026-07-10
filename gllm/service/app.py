@@ -41,6 +41,7 @@ def build_loop_request(payload: dict) -> LoopRequest:
         openrouter_model_name=payload.get("openrouter_model_name") or None,
         run_vericut=bool(payload.get("run_vericut", False)),
         max_attempts=int(payload.get("max_attempts", 4)),
+        vericut_max_rounds=int(payload.get("vericut_max_rounds", 2)),
         token_budget=payload.get("token_budget"),
         scenario_id=payload.get("scenario_id") or None,
     )

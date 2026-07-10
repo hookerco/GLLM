@@ -90,6 +90,10 @@
           <span class="switch"></span>
           <span class="toggle-txt">VERICUT&nbsp;FINAL&nbsp;GATE<span class="hint" id="vericut-hint">requires a machine setup</span></span>
         </label>
+        <label class="field hidden" id="vericut-rounds-field">
+          <span class="field-lbl">VERICUT&nbsp;REPAIR&nbsp;ROUNDS <span class="hint">repair rejections · 0 = single gate</span></span>
+          <input id="vericut_max_rounds" type="number" value="2" min="0" max="10" />
+        </label>
 
         <button type="submit" id="run-btn" class="btn run">
           <span class="run-stripes"></span>
